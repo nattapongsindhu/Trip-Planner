@@ -7,7 +7,8 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 import { DayList } from '@/components/DayList'
 import { HotelList } from '@/components/HotelList'
 import { BudgetTracker } from '@/components/BudgetTracker'
-import { getOptionalUser } from '@/lib/supabaseAuth'
+import { getOptionalUserFromClientFactory } from '@/lib/supabaseAuth'
+import { createPublicServerClient } from '@/lib/supabasePublicServer'
 import type { Trip, Day, Hotel, BudgetItem } from '@/types'
 
 type Props = { params: { id: string } }
@@ -15,7 +16,7 @@ type Props = { params: { id: string } }
 export const revalidate = 0
 
 export default async function TripPage({ params }: Props) {
-  const supabase = createClient()
+  const supabase = createPublicServerClient()
 
   // fetch all related data in parallel to minimise load time
   const [
@@ -29,7 +30,7 @@ export default async function TripPage({ params }: Props) {
     supabase.from('days').select('*').eq('trip_id', params.id).order('day_number'),
     supabase.from('hotels').select('*').eq('trip_id', params.id).order('city'),
     supabase.from('budget_items').select('*').eq('trip_id', params.id),
-    getOptionalUser(supabase),
+    getOptionalUserFromClientFactory(createClient),
   ])
 
   if (tripError?.code === 'PGRST116' || !trip) notFound()

@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabaseServer'
 import { getOptionalUser } from '@/lib/supabaseAuth'
+import { createPublicServerClient } from '@/lib/supabasePublicServer'
 import type { TripInsert } from '@/types'
 
 // GET /api/trips — public, returns all trips ordered by newest first
 export async function GET() {
-  const supabase = createClient()
+  const supabase = createPublicServerClient()
 
   const { data, error } = await supabase
     .from('trips')

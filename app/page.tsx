@@ -5,18 +5,19 @@ import { formatDate, formatEur, tripDuration } from '@/lib/formatters'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { AuthButton } from '@/components/AuthButton'
 import { NewTripButton } from '@/components/NewTripButton'
-import { getOptionalUser } from '@/lib/supabaseAuth'
+import { getOptionalUserFromClientFactory } from '@/lib/supabaseAuth'
+import { createPublicServerClient } from '@/lib/supabasePublicServer'
 import type { Trip } from '@/types'
 
 // always fetch fresh data — no ISR caching on the trips list
 export const revalidate = 0
 
 export default async function HomePage() {
-  const supabase = createClient()
+  const supabase = createPublicServerClient()
 
   const [{ data: trips, error: tripsError }, user] = await Promise.all([
     supabase.from('trips').select('*').order('created_at', { ascending: false }),
-    getOptionalUser(supabase),
+    getOptionalUserFromClientFactory(createClient),
   ])
 
   if (tripsError) {

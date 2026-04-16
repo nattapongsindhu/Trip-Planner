@@ -1,36 +1,8 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { getServerEnv } from '@/lib/env'
-import { getOptionalUser } from '@/lib/supabaseAuth'
 
 export async function middleware(request: NextRequest) {
-  const env = getServerEnv()
-  let supabaseResponse = NextResponse.next({ request })
-
-  const supabase = createServerClient(
-    env.NEXT_PUBLIC_SUPABASE_URL,
-    env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet: { name: string; value: string; options?: object }[]) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          )
-          supabaseResponse = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
-      },
-    }
-  )
-
-  await getOptionalUser(supabase)
-
-  return supabaseResponse
+  // Keep middleware side-effect free so stale auth cookies do not break public routes.
+  return NextResponse.next({ request })
 }
 
 export const config = {

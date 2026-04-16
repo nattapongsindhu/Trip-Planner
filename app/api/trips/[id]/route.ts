@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabaseServer'
 import { getOptionalUser } from '@/lib/supabaseAuth'
+import { createPublicServerClient } from '@/lib/supabasePublicServer'
 import type { TripUpdate } from '@/types'
 
 type Params = { params: { id: string } }
 
 // GET /api/trips/[id] — public, returns a single trip
 export async function GET(_req: Request, { params }: Params) {
-  const supabase = createClient()
+  const supabase = createPublicServerClient()
 
   const { data, error } = await supabase
     .from('trips')
