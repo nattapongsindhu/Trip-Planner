@@ -1,39 +1,74 @@
 import type { BudgetCategory, BudgetItem, BudgetSummary } from '@/types'
 
-export function formatEur(amount: number): string {
+function toFiniteNumber(value: unknown): number | null {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null
+  }
+
+  if (typeof value === 'string' && value.trim().length > 0) {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : null
+  }
+
+  return null
+}
+
+export function formatEur(amount: unknown): string {
+  const safeAmount = toFiniteNumber(amount) ?? 0
+
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'EUR',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(amount)
+  }).format(safeAmount)
 }
 
-export function formatCostRange(min: number, max: number): string {
-  if (min === max) return formatEur(min)
-  return `€${min}–${max}`
+export function formatCostRange(min: unknown, max: unknown): string {
+  const safeMin = toFiniteNumber(min)
+  const safeMax = toFiniteNumber(max)
+
+  if (safeMin == null && safeMax == null) return '-'
+  if (safeMin != null && safeMax == null) return formatEur(safeMin)
+  if (safeMin == null && safeMax != null) return formatEur(safeMax)
+  if (safeMin === safeMax) return formatEur(safeMin)
+
+  return `EUR ${safeMin}-${safeMax}`
 }
 
 export function formatDate(dateStr: string | null): string {
-  if (!dateStr) return '—'
+  if (!dateStr) return '-'
+
+  const date = new Date(`${dateStr}T00:00:00Z`)
+  if (Number.isNaN(date.getTime())) return '-'
 
   return new Intl.DateTimeFormat('en-GB', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
     timeZone: 'UTC',
-  }).format(new Date(`${dateStr}T00:00:00Z`))
+  }).format(date)
 }
 
 export function tripDuration(start: string | null, end: string | null): number {
   if (!start || !end) return 0
-  const diff = new Date(end).getTime() - new Date(start).getTime()
+
+  const startTime = new Date(start).getTime()
+  const endTime = new Date(end).getTime()
+
+  if (Number.isNaN(startTime) || Number.isNaN(endTime)) return 0
+
+  const diff = endTime - startTime
   return Math.round(diff / (1000 * 60 * 60 * 24))
 }
 
-export function countryFlag(code: string): string {
-  return code
-    .toUpperCase()
+export function countryFlag(code: string | null | undefined): string {
+  if (typeof code !== 'string') return '??'
+
+  const normalized = code.trim().toUpperCase()
+  if (!/^[A-Z]{2}$/.test(normalized)) return '??'
+
+  return normalized
     .split('')
     .map(char => String.fromCodePoint(0x1f1e6 + char.charCodeAt(0) - 65))
     .join('')
@@ -46,12 +81,14 @@ export function calcBudgetSummary(items: BudgetItem[]): BudgetSummary {
   let total_actual = 0
 
   for (const item of items) {
-    byCategory[item.category] = (byCategory[item.category] ?? 0) + item.amount_eur
+    const amount = toFiniteNumber(item.amount_eur) ?? 0
+
+    byCategory[item.category] = (byCategory[item.category] ?? 0) + amount
 
     if (item.is_actual) {
-      total_actual += item.amount_eur
+      total_actual += amount
     } else {
-      total_estimated += item.amount_eur
+      total_estimated += amount
     }
   }
 

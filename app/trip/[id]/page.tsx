@@ -15,6 +15,29 @@ type Props = { params: { id: string } }
 
 export const revalidate = 0
 
+function toNullableString(value: unknown): string | null {
+  return typeof value === 'string' ? value : null
+}
+
+function toText(value: unknown, fallback: string): string {
+  return typeof value === 'string' && value.trim().length > 0 ? value : fallback
+}
+
+function toNumber(value: unknown, fallback = 0): number {
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+
+  if (typeof value === 'string' && value.trim().length > 0) {
+    const parsed = Number(value)
+    if (Number.isFinite(parsed)) return parsed
+  }
+
+  return fallback
+}
+
+function toBoolean(value: unknown): boolean {
+  return value === true
+}
+
 export default async function TripPage({ params }: Props) {
   const supabase = createPublicServerClient()
 
@@ -46,13 +69,58 @@ export default async function TripPage({ params }: Props) {
     throw new Error('Failed to load one or more trip resources.')
   }
 
-  const isAdmin      = !!user
-  const typedTrip    = trip as Trip
-  const typedDays    = (days ?? []) as Day[]
-  const typedHotels  = (hotels ?? []) as Hotel[]
-  const typedBudget  = (budgetItems ?? []) as BudgetItem[]
-  const progress     = calcProgress(typedDays)
-  const duration     = tripDuration(typedTrip.start_date, typedTrip.end_date)
+  const isAdmin = !!user
+  const tripRecord = trip as Trip
+  const typedTrip: Trip = {
+    id: toText(tripRecord.id, params.id),
+    title: toText(tripRecord.title, 'Untitled trip'),
+    destination: toText(tripRecord.destination, 'Destination unavailable'),
+    start_date: toNullableString(tripRecord.start_date),
+    end_date: toNullableString(tripRecord.end_date),
+    budget_eur: toNumber(tripRecord.budget_eur),
+    is_template: toBoolean(tripRecord.is_template),
+    is_public: toBoolean(tripRecord.is_public),
+    created_at: toText(tripRecord.created_at, ''),
+  }
+  const typedDays: Day[] = ((days ?? []) as Day[]).map((day, index) => ({
+    id: toText(day.id, `day-${index}`),
+    trip_id: toText(day.trip_id, params.id),
+    day_number: toNumber(day.day_number, index + 1),
+    city: toText(day.city, 'Unknown stop'),
+    country_code: typeof day.country_code === 'string' ? day.country_code : '',
+    highlights: toNullableString(day.highlights),
+    transport: toNullableString(day.transport),
+    stay: toNullableString(day.stay),
+    cost_eur_min: toNumber(day.cost_eur_min),
+    cost_eur_max: toNumber(day.cost_eur_max),
+    note: toNullableString(day.note),
+    is_done: toBoolean(day.is_done),
+    book_by: toNullableString(day.book_by),
+    is_transfer: toBoolean(day.is_transfer),
+  }))
+  const typedHotels: Hotel[] = ((hotels ?? []) as Hotel[]).map((hotel, index) => ({
+    id: toText(hotel.id, `hotel-${index}`),
+    trip_id: toText(hotel.trip_id, params.id),
+    city: toText(hotel.city, 'Unknown city'),
+    country_code: typeof hotel.country_code === 'string' ? hotel.country_code : '',
+    name: toText(hotel.name, 'Unnamed hotel'),
+    price_min: hotel.price_min == null ? null : toNumber(hotel.price_min),
+    price_max: hotel.price_max == null ? null : toNumber(hotel.price_max),
+    rating: hotel.rating == null ? null : toNumber(hotel.rating),
+    notes: toNullableString(hotel.notes),
+    book_url: toNullableString(hotel.book_url),
+    is_selected: toBoolean(hotel.is_selected),
+  }))
+  const typedBudget: BudgetItem[] = ((budgetItems ?? []) as BudgetItem[]).map((item, index) => ({
+    id: toText(item.id, `budget-${index}`),
+    trip_id: toText(item.trip_id, params.id),
+    category: item.category,
+    label: toText(item.label, 'Untitled item'),
+    amount_eur: toNumber(item.amount_eur),
+    is_actual: toBoolean(item.is_actual),
+  }))
+  const progress = calcProgress(typedDays)
+  const duration = tripDuration(typedTrip.start_date, typedTrip.end_date)
 
   return (
     <main className="max-w-4xl mx-auto px-4 py-8">
