@@ -1,11 +1,21 @@
-// Run: npx ts-node supabase/seed.ts
-// Requires .env.local with SUPABASE_SERVICE_ROLE_KEY before running
-
 import { createClient } from '@supabase/supabase-js'
+import { getServerEnv, hasServiceRoleKey } from '../lib/env'
+
+const env = getServerEnv()
+
+if (!hasServiceRoleKey(env)) {
+  throw new Error('SUPABASE_SERVICE_ROLE_KEY is required to run the seed script.')
+}
+
+const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY
+
+if (!serviceRoleKey) {
+  throw new Error('SUPABASE_SERVICE_ROLE_KEY is required to run the seed script.')
+}
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // service role key bypasses RLS
+  env.NEXT_PUBLIC_SUPABASE_URL,
+  serviceRoleKey
 )
 
 async function seed() {

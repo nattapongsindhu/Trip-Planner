@@ -13,17 +13,13 @@ export const revalidate = 0
 export default async function HomePage() {
   const supabase = createClient()
 
-  const [{ data: trips, error }, { data: { user } }] = await Promise.all([
+  const [{ data: trips, error: tripsError }, { data: { user } }] = await Promise.all([
     supabase.from('trips').select('*').order('created_at', { ascending: false }),
     supabase.auth.getUser(),
   ])
 
-  if (error) {
-    return (
-      <main className="max-w-4xl mx-auto px-4 py-12">
-        <p className="text-destructive text-sm">Failed to load trips: {error.message}</p>
-      </main>
-    )
+  if (tripsError) {
+    throw new Error(`Failed to load trips: ${tripsError.message}`)
   }
 
   const isAdmin = !!user

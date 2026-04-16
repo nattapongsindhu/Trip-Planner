@@ -19,9 +19,9 @@ export default async function TripPage({ params }: Props) {
   // fetch all related data in parallel to minimise load time
   const [
     { data: trip, error: tripError },
-    { data: days },
-    { data: hotels },
-    { data: budgetItems },
+    { data: days, error: daysError },
+    { data: hotels, error: hotelsError },
+    { data: budgetItems, error: budgetError },
     { data: { user } },
   ] = await Promise.all([
     supabase.from('trips').select('*').eq('id', params.id).single(),
@@ -31,7 +31,11 @@ export default async function TripPage({ params }: Props) {
     supabase.auth.getUser(),
   ])
 
-  if (tripError || !trip) notFound()
+  if (tripError?.code === 'PGRST116' || !trip) notFound()
+
+  if (tripError || daysError || hotelsError || budgetError) {
+    throw new Error('Failed to load one or more trip resources.')
+  }
 
   const isAdmin      = !!user
   const typedTrip    = trip as Trip

@@ -1,93 +1,69 @@
 # Security Policy
 
-## Supported Versions
+## Supported versions
 
-This project is a portfolio demonstration. Only the latest version on the `main` branch receives security updates.
+This repository is maintained as a portfolio application. Only the latest code on the `main` branch is supported for security fixes.
 
 | Version | Supported |
-|---|---|
-| `main` (latest) | Yes |
-| Any other branch or tag | No |
+| --- | --- |
+| `main` | Yes |
+| Older branches or tags | No |
 
----
+## Reporting a vulnerability
 
-## Reporting a Vulnerability
+Please report vulnerabilities privately. Do not open a public GitHub issue for security problems.
 
-If you discover a security vulnerability in Trip Planner, please report it privately. **Do not open a public GitHub issue.**
+- Email: **nattapongsindhu@gmail.com**
+- Include impact, reproduction steps, affected routes or tables, and suggested mitigation if you have one.
 
-### How to report
+## Response targets
 
-Email: **nattapongsindhu@gmail.com**
-
-Include the following information:
-
-- A description of the vulnerability
-- Steps to reproduce the issue
-- The potential impact you observed
-- Any suggested mitigation (optional)
-
-### What to expect
-
-- **Acknowledgment** within 72 hours
-- **Initial assessment** within 7 days
-- **Fix timeline** communicated based on severity:
-  - Critical: patch within 7 days
-  - High: patch within 14 days
-  - Medium/Low: patch within 30 days
-
-Once the issue is resolved, we will credit you in the release notes unless you prefer to remain anonymous.
-
----
+- Acknowledgment within 72 hours
+- Initial triage within 7 days
+- Remediation target based on severity
 
 ## Scope
 
-### In scope
+In scope:
 
 - Source code in this repository
 - The live deployment at `https://trip-planner-rho-coral.vercel.app`
-- Row Level Security policies in `supabase/migrations/`
-- Authentication flow (magic link sign-in)
-- API routes under `/api/`
+- Supabase schema and RLS migrations
+- API routes and auth flows
 
-### Out of scope
+Out of scope:
 
-- Vulnerabilities in third-party dependencies (report to the upstream project)
-- Vulnerabilities in Supabase or Vercel infrastructure (report to those vendors directly)
-- Denial-of-service attacks on the demo deployment
-- Social engineering of the project maintainer
-- Issues requiring physical access to the maintainer's machine
+- Third-party vulnerabilities in Supabase, Vercel, or npm packages that are not caused by this repository
+- Social engineering of the maintainer
+- Denial-of-service testing against the public demo
 
----
+## Security controls in place
 
-## Known Limitations
+- Row Level Security enforced at the database layer
+- Magic link authentication with no locally stored passwords
+- Shared environment validation before Supabase clients are created
+- Separate public and service-role credentials
+- GitHub Actions quality gates for linting, type checking, tests, and production builds
+- CodeQL analysis for static application security testing
+- TruffleHog secret scanning on pull requests and pushes
+- Dependabot updates for dependencies and GitHub Actions
 
-This project is a portfolio demonstration and has the following **documented security limitations** that are not considered vulnerabilities:
+## Secret handling requirements
 
-1. **Single-admin model** — any authenticated user currently has admin privileges on all trips. Multi-tenant isolation is on the roadmap.
-2. **No rate limiting** — API routes do not enforce per-user request limits.
-3. **Public read access by default** — existing trips are readable by anyone with the URL. Per-trip visibility controls (`is_public` flag) are being added.
-4. **No automated backups** — Supabase free tier does not include automated database backups.
+- Never commit `.env`, `.env.local`, service role keys, or third-party tokens.
+- Store deployment secrets in Vercel Environment Variables.
+- If a secret is ever exposed, rotate it immediately and purge it from git history when appropriate.
+- Treat historical secret exposure as an incident even if the file was later deleted.
 
-These limitations are documented in the README `Future improvements` section and are tracked for resolution.
+## Known limitations
 
----
+The following are documented limitations, not hidden vulnerabilities:
 
-## Security Best Practices Used
+1. The app still follows a single-admin model rather than per-user ownership.
+2. API routes do not yet enforce rate limits.
+3. Public trips are discoverable by URL unless marked private.
+4. Free-tier Supabase does not provide production-grade backup guarantees.
 
-This project implements the following security measures:
+## Responsible disclosure
 
-- **Row Level Security (RLS)** enforced at the PostgreSQL layer, not application layer
-- **Magic link authentication** — no passwords stored in the database
-- **Environment variable validation** via Zod (`lib/env.ts`) at application startup
-- **Separate anon and service role keys** — the service role key is never exposed to the client
-- **Server-side session management** via middleware
-- **HTTPS enforced** by Vercel's default deployment configuration
-- **No secrets in source control** — `.env.local` is in `.gitignore` and protected
-
----
-
-## Responsible Disclosure
-
-We follow a 90-day coordinated disclosure timeline. If a fix is not deployed within 90 days of the initial report, researchers are free to disclose publicly after notifying the maintainer.
-
-Thank you for helping keep Trip Planner and its users safe.
+This project follows coordinated disclosure. Once a fix is available, public disclosure is welcome. If no fix is deployed within 90 days, coordinated public disclosure may proceed after notifying the maintainer.
