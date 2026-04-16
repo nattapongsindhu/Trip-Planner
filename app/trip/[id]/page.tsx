@@ -2,7 +2,15 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabaseServer'
-import { formatDate, formatEur, tripDuration, calcProgress } from '@/lib/formatters'
+import {
+  calcBudgetSummary,
+  calcProgress,
+  countryFlag,
+  formatCostRange,
+  formatDate,
+  formatEur,
+  tripDuration,
+} from '@/lib/formatters'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { DayList } from '@/components/DayList'
 import { HotelList } from '@/components/HotelList'
@@ -36,6 +44,145 @@ function toNumber(value: unknown, fallback = 0): number {
 
 function toBoolean(value: unknown): boolean {
   return value === true
+}
+
+function renderReadonlyDays(days: Day[]) {
+  if (days.length === 0) {
+    return <p className="text-sm text-muted-foreground py-4">No days added yet.</p>
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {days.map(day => (
+        <article key={day.id} className="rounded-xl border bg-card p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium">
+                Day {day.day_number}: {countryFlag(day.country_code)} {day.city}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {day.stay ?? 'Stay not set'}
+              </p>
+            </div>
+            <span className="text-xs text-muted-foreground">
+              {formatCostRange(day.cost_eur_min, day.cost_eur_max)}
+            </span>
+          </div>
+
+          {day.highlights && (
+            <p className="text-sm mt-3 leading-relaxed">{day.highlights}</p>
+          )}
+
+          {day.transport && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Transport: {day.transport}
+            </p>
+          )}
+
+          {day.note && (
+            <p className="text-xs text-muted-foreground mt-2">Note: {day.note}</p>
+          )}
+        </article>
+      ))}
+    </div>
+  )
+}
+
+function renderReadonlyHotels(hotels: Hotel[]) {
+  if (hotels.length === 0) {
+    return <p className="text-sm text-muted-foreground py-4">No hotels added yet.</p>
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {hotels.map(hotel => (
+        <article key={hotel.id} className="rounded-xl border bg-card p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium">
+                {countryFlag(hotel.country_code)} {hotel.name}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">{hotel.city}</p>
+            </div>
+            {hotel.is_selected && (
+              <span className="text-xs rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-primary">
+                selected
+              </span>
+            )}
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+            {(hotel.price_min != null || hotel.price_max != null) && (
+              <span>{formatCostRange(hotel.price_min, hotel.price_max)} / night</span>
+            )}
+            {hotel.rating != null && <span>Rating: {hotel.rating}</span>}
+          </div>
+
+          {hotel.notes && (
+            <p className="text-sm mt-3 leading-relaxed">{hotel.notes}</p>
+          )}
+
+          {hotel.book_url && (
+            <a
+              href={hotel.book_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-flex text-xs text-primary hover:underline"
+            >
+              Book
+            </a>
+          )}
+        </article>
+      ))}
+    </div>
+  )
+}
+
+function renderReadonlyBudget(items: BudgetItem[]) {
+  const summary = calcBudgetSummary(items)
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="rounded-xl border bg-card p-4">
+          <p className="text-xs text-muted-foreground mb-1">Total estimated</p>
+          <p className="text-xl font-semibold">{formatEur(summary.total_estimated)}</p>
+        </div>
+        <div className="rounded-xl border bg-card p-4">
+          <p className="text-xs text-muted-foreground mb-1">Total actual</p>
+          <p className="text-xl font-semibold">{formatEur(summary.total_actual)}</p>
+        </div>
+        <div className="rounded-xl border bg-card p-4 col-span-2 sm:col-span-1">
+          <p className="text-xs text-muted-foreground mb-1">Items</p>
+          <p className="text-xl font-semibold">{items.length}</p>
+        </div>
+      </div>
+
+      {items.length === 0 ? (
+        <p className="text-sm text-muted-foreground py-4">No budget items yet.</p>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {items.map(item => (
+            <div
+              key={item.id}
+              className="flex items-center justify-between gap-3 rounded-lg border bg-card px-3 py-2.5"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="text-sm truncate">{item.label}</p>
+                <p className="text-xs text-muted-foreground mt-1">{item.category}</p>
+              </div>
+              <div className="shrink-0 text-right">
+                <p className="text-sm font-medium">{formatEur(item.amount_eur)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {item.is_actual ? 'actual' : 'estimate'}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default async function TripPage({ params }: Props) {
@@ -197,7 +344,9 @@ export default async function TripPage({ params }: Props) {
             {typedDays.length} days
           </span>
         </h2>
-        <DayList days={typedDays} tripId={params.id} isAdmin={isAdmin} />
+        {isAdmin
+          ? <DayList days={typedDays} tripId={params.id} isAdmin={isAdmin} />
+          : renderReadonlyDays(typedDays)}
       </section>
 
       {/* accommodation section */}
@@ -208,13 +357,17 @@ export default async function TripPage({ params }: Props) {
             {typedHotels.filter(h => h.is_selected).length} selected
           </span>
         </h2>
-        <HotelList hotels={typedHotels} tripId={params.id} isAdmin={isAdmin} />
+        {isAdmin
+          ? <HotelList hotels={typedHotels} tripId={params.id} isAdmin={isAdmin} />
+          : renderReadonlyHotels(typedHotels)}
       </section>
 
       {/* budget section */}
       <section className="mb-8">
         <h2 className="text-base font-semibold mb-3">Budget</h2>
-        <BudgetTracker items={typedBudget} tripId={params.id} isAdmin={isAdmin} />
+        {isAdmin
+          ? <BudgetTracker items={typedBudget} tripId={params.id} isAdmin={isAdmin} />
+          : renderReadonlyBudget(typedBudget)}
       </section>
 
     </main>
