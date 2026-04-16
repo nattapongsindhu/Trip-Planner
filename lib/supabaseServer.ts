@@ -1,5 +1,3 @@
-// Server client — use in Server Components and Route Handlers only
-// Reads and writes cookies so the session is available server-side
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
@@ -20,8 +18,6 @@ export function createClient() {
               cookieStore.set(name, value, options)
             })
           } catch {
-            // Server Components cannot set cookies directly
-            // middleware handles session refresh instead
           }
         },
       },
