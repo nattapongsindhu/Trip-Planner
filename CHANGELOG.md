@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 - Environment variables are validated through shared helpers before Supabase clients are created.
 - Seed workflow now runs through `npm run seed` with `.env.local` loading built in.
+- Supabase config now prefers publishable and secret API keys, while temporarily accepting legacy anon and service-role names during rollout.
 
 ## [0.2.0] - 2026-04-16
 

@@ -49,7 +49,7 @@ This project treats security as a first-class engineering concern.
 - Row Level Security is enforced in PostgreSQL, not only in UI logic.
 - Magic link auth avoids local password storage.
 - Environment variables are validated before Supabase clients are created.
-- Service role usage is isolated to admin-only scripts such as seeding.
+- Publishable keys are used for SSR and browser auth flows, while secret keys stay isolated to admin-only scripts such as seeding.
 - CI includes CodeQL, secret scanning, linting, type checks, coverage, and build verification.
 
 See [SECURITY.md](./SECURITY.md) for vulnerability disclosure and response expectations.
@@ -77,6 +77,8 @@ npm run dev
 ```
 
 Full setup instructions, including Supabase and Vercel configuration, live in [docs/SETUP.md](./docs/SETUP.md).
+
+The app now prefers `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` and `SUPABASE_SECRET_KEY`. Legacy `anon` and `service_role` variable names remain supported temporarily to make rollout safer.
 
 ## Architecture overview
 

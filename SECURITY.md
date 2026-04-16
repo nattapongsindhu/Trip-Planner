@@ -42,7 +42,7 @@ Out of scope:
 - Row Level Security enforced at the database layer
 - Magic link authentication with no locally stored passwords
 - Shared environment validation before Supabase clients are created
-- Separate public and service-role credentials
+- Separate public and admin credentials
 - GitHub Actions quality gates for linting, type checking, tests, and production builds
 - CodeQL analysis for static application security testing
 - TruffleHog secret scanning on pull requests and pushes
@@ -50,7 +50,7 @@ Out of scope:
 
 ## Secret handling requirements
 
-- Never commit `.env`, `.env.local`, service role keys, or third-party tokens.
+- Never commit `.env`, `.env.local`, secret or service-role keys, or third-party tokens.
 - Store deployment secrets in Vercel Environment Variables.
 - If a secret is ever exposed, rotate it immediately and purge it from git history when appropriate.
 - Treat historical secret exposure as an incident even if the file was later deleted.

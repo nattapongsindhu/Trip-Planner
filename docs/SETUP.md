@@ -23,7 +23,7 @@ npm install
 
 1. Sign in at [supabase.com/dashboard](https://supabase.com/dashboard).
 2. Create a new project.
-3. Save the project URL, anon key, and service role key from **Project Settings -> API Keys**.
+3. Save the project URL, publishable key, and secret key from **Project Settings -> API Keys**.
 
 ### 3. Run database migrations
 
@@ -46,9 +46,16 @@ Fill in these values:
 | Variable | Source | Notes |
 | --- | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase API settings | Public browser value |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase API keys | Public browser value, still governed by RLS |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase API keys | Secret, server-only, never commit |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase API keys | Public browser value, still governed by RLS |
+| `SUPABASE_SECRET_KEY` | Supabase API keys | Secret, server-only, never commit |
 | `NEXT_PUBLIC_SITE_URL` | Local or deployed URL | Used for auth redirects |
+
+Legacy fallback during rotation:
+
+| Variable | Status | Notes |
+| --- | --- | --- |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Optional temporary fallback | Accepted while you roll out the publishable key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Optional temporary fallback | Accepted while you roll out the secret key |
 
 ### 5. Seed sample data
 
@@ -93,7 +100,14 @@ git push origin main
 
 ### 3. Add environment variables
 
-Copy the same four variables from `.env.local` into **Vercel -> Project Settings -> Environment Variables**.
+Copy the same four preferred variables from `.env.local` into **Vercel -> Project Settings -> Environment Variables**.
+
+For a safe rotation:
+
+1. Add the new publishable and secret keys in Vercel first.
+2. Redeploy production and preview.
+3. Verify auth, reads, and write flows still work.
+4. Remove legacy fallback variables and revoke the old key only after the new deployment is healthy.
 
 ### 4. Update Supabase auth redirect URLs
 
@@ -113,9 +127,9 @@ After the first successful GitHub Actions run, enable the recommended branch pro
 
 The app now validates environment variables before creating Supabase clients. Double-check `.env.local` against `.env.example`.
 
-### Seed command fails with a missing service role key
+### Seed command fails with a missing admin key
 
-`npm run seed` requires `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`.
+`npm run seed` requires `SUPABASE_SECRET_KEY` in `.env.local`. `SUPABASE_SERVICE_ROLE_KEY` is still accepted as a temporary fallback during migration.
 
 ### Magic link redirects to localhost in production
 

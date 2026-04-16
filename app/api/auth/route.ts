@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server'
+import { getServerEnv } from '@/lib/env'
 import { createClient } from '@/lib/supabaseServer'
 
 // POST /api/auth — sends a magic link to the given email address
 // body: { email: string }
 export async function POST(request: Request) {
+  const env = getServerEnv()
   const supabase = createClient()
   const { email }: { email: string } = await request.json()
 
@@ -14,7 +16,7 @@ export async function POST(request: Request) {
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+      emailRedirectTo: `${env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
     },
   })
 

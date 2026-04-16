@@ -50,7 +50,7 @@ npm run seed
 
 ## Security expectations
 
-- Never commit `.env`, `.env.local`, service role keys, or third-party tokens.
+- Never commit `.env`, `.env.local`, secret or service-role keys, or third-party tokens.
 - Use Vercel environment variables for deployment secrets.
 - Rotate any credential immediately if it is ever exposed, then purge it from git history if needed.
 - Report vulnerabilities privately as described in [SECURITY.md](./SECURITY.md).

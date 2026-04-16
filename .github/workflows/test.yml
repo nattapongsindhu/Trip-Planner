@@ -68,7 +68,7 @@ jobs:
       - name: Build Next.js app
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder.placeholderplaceholderplaceholderplaceholderplaceholderplaceholderplaceholderplaceholder
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_placeholderplaceholderplaceholderplaceholder
           NEXT_PUBLIC_SITE_URL: https://placeholder.vercel.app
           NODE_ENV: production
         run: npm run build

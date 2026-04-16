@@ -2,50 +2,72 @@ import { describe, expect, it } from 'vitest'
 import {
   getPublicEnv,
   getServerEnv,
-  hasServiceRoleKey,
+  hasAdminApiKey,
   parsePublicEnv,
   parseServerEnv,
   resetEnvCache,
 } from './env'
 
 const validUrl = 'https://demo-project.supabase.co'
-const validKey =
+const validLegacyJwt =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholderplaceholderplaceholderplaceholderplaceholderplaceholderplaceholder'
+const validPublishableKey = 'sb_publishable_1234567890abcdefghijklmnopqrstuvwxyz'
+const validSecretKey = 'sb_secret_1234567890abcdefghijklmnopqrstuvwxyz'
 const validSiteUrl = 'https://trip-planner.example.com'
 
 function withValidProcessEnv() {
   Object.assign(process.env, {
     NEXT_PUBLIC_SUPABASE_URL: validUrl,
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: validKey,
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: validPublishableKey,
     NEXT_PUBLIC_SITE_URL: validSiteUrl,
-    SUPABASE_SERVICE_ROLE_KEY: validKey,
+    SUPABASE_SECRET_KEY: validSecretKey,
     NODE_ENV: 'test',
   })
 }
 
 describe('parsePublicEnv', () => {
-  it('parses the required public variables', () => {
+  it('parses the preferred publishable key variables', () => {
     expect(
       parsePublicEnv({
         NEXT_PUBLIC_SUPABASE_URL: validUrl,
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: validKey,
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: validPublishableKey,
         NEXT_PUBLIC_SITE_URL: validSiteUrl,
       })
     ).toEqual({
       NEXT_PUBLIC_SUPABASE_URL: validUrl,
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: validKey,
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: validPublishableKey,
       NEXT_PUBLIC_SITE_URL: validSiteUrl,
     })
+  })
+
+  it('accepts the legacy anon key as a temporary fallback', () => {
+    expect(
+      parsePublicEnv({
+        NEXT_PUBLIC_SUPABASE_URL: validUrl,
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: validLegacyJwt,
+        NEXT_PUBLIC_SITE_URL: validSiteUrl,
+      }).NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+    ).toBe(validLegacyJwt)
+  })
+
+  it('prefers the publishable key when both names are present', () => {
+    expect(
+      parsePublicEnv({
+        NEXT_PUBLIC_SUPABASE_URL: validUrl,
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: validPublishableKey,
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: validLegacyJwt,
+        NEXT_PUBLIC_SITE_URL: validSiteUrl,
+      }).NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+    ).toBe(validPublishableKey)
   })
 
   it('throws a readable error when a public variable is missing', () => {
     expect(() =>
       parsePublicEnv({
         NEXT_PUBLIC_SUPABASE_URL: validUrl,
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: undefined,
         NEXT_PUBLIC_SITE_URL: validSiteUrl,
       })
-    ).toThrow(/NEXT_PUBLIC_SUPABASE_ANON_KEY/)
+    ).toThrow(/NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY/)
   })
 
   it('reads and caches public env from process.env', () => {
@@ -66,34 +88,46 @@ describe('parseServerEnv', () => {
     expect(
       parseServerEnv({
         NEXT_PUBLIC_SUPABASE_URL: validUrl,
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: validKey,
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: validPublishableKey,
         NEXT_PUBLIC_SITE_URL: validSiteUrl,
-        SUPABASE_SERVICE_ROLE_KEY: validKey,
+        SUPABASE_SECRET_KEY: validSecretKey,
       }).NODE_ENV
     ).toBe('development')
   })
 
-  it('accepts an omitted service role key for app runtime', () => {
+  it('accepts an omitted admin key for app runtime', () => {
     const env = parseServerEnv({
       NEXT_PUBLIC_SUPABASE_URL: validUrl,
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: validKey,
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: validPublishableKey,
       NEXT_PUBLIC_SITE_URL: validSiteUrl,
       NODE_ENV: 'production',
     })
 
-    expect(hasServiceRoleKey(env)).toBe(false)
+    expect(hasAdminApiKey(env)).toBe(false)
+  })
+
+  it('accepts the legacy service role key as a temporary fallback', () => {
+    expect(
+      parseServerEnv({
+        NEXT_PUBLIC_SUPABASE_URL: validUrl,
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: validPublishableKey,
+        NEXT_PUBLIC_SITE_URL: validSiteUrl,
+        SUPABASE_SERVICE_ROLE_KEY: validLegacyJwt,
+        NODE_ENV: 'production',
+      }).SUPABASE_SECRET_KEY
+    ).toBe(validLegacyJwt)
   })
 
   it('rejects malformed server-only secrets', () => {
     expect(() =>
       parseServerEnv({
         NEXT_PUBLIC_SUPABASE_URL: validUrl,
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: validKey,
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: validPublishableKey,
         NEXT_PUBLIC_SITE_URL: validSiteUrl,
-        SUPABASE_SERVICE_ROLE_KEY: 'not-a-jwt',
+        SUPABASE_SECRET_KEY: 'not-a-key',
         NODE_ENV: 'production',
       })
-    ).toThrow(/SUPABASE_SERVICE_ROLE_KEY/)
+    ).toThrow(/SUPABASE_SECRET_KEY/)
   })
 
   it('reads and caches server env from process.env', () => {

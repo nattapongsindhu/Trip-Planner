@@ -1,21 +1,25 @@
 import { createClient } from '@supabase/supabase-js'
-import { getServerEnv, hasServiceRoleKey } from '../lib/env'
+import { getServerEnv, hasAdminApiKey } from '../lib/env'
 
 const env = getServerEnv()
 
-if (!hasServiceRoleKey(env)) {
-  throw new Error('SUPABASE_SERVICE_ROLE_KEY is required to run the seed script.')
+if (!hasAdminApiKey(env)) {
+  throw new Error(
+    'SUPABASE_SECRET_KEY is required to run the seed script. SUPABASE_SERVICE_ROLE_KEY remains supported as a temporary fallback.'
+  )
 }
 
-const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY
+const adminApiKey = env.SUPABASE_SECRET_KEY
 
-if (!serviceRoleKey) {
-  throw new Error('SUPABASE_SERVICE_ROLE_KEY is required to run the seed script.')
+if (!adminApiKey) {
+  throw new Error(
+    'SUPABASE_SECRET_KEY is required to run the seed script. SUPABASE_SERVICE_ROLE_KEY remains supported as a temporary fallback.'
+  )
 }
 
 const supabase = createClient(
   env.NEXT_PUBLIC_SUPABASE_URL,
-  serviceRoleKey
+  adminApiKey
 )
 
 async function seed() {

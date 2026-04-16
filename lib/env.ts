@@ -1,31 +1,72 @@
 import { z } from 'zod'
 
+type EnvInput = Record<string, string | undefined>
+
+function isLegacyJwtKey(value: string) {
+  return value.startsWith('eyJ')
+}
+
+function isPublishableKey(value: string) {
+  return value.startsWith('sb_publishable_')
+}
+
+function isSecretKey(value: string) {
+  return value.startsWith('sb_secret_')
+}
+
+function resolvePublicApiKey(input: EnvInput) {
+  return input.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? input.NEXT_PUBLIC_SUPABASE_ANON_KEY
+}
+
+function resolveAdminApiKey(input: EnvInput) {
+  return input.SUPABASE_SECRET_KEY ?? input.SUPABASE_SERVICE_ROLE_KEY
+}
+
+const publicApiKeySchema = z
+  .string({
+    required_error:
+      'Set NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (preferred) or NEXT_PUBLIC_SUPABASE_ANON_KEY (legacy fallback).',
+  })
+  .min(20, {
+    message:
+      'Supabase public API key is too short. Use a publishable key (sb_publishable_...) or legacy anon JWT.',
+  })
+  .refine(value => isPublishableKey(value) || isLegacyJwtKey(value), {
+    message:
+      'Supabase public API key must be a publishable key (sb_publishable_...) or legacy anon JWT.',
+  })
+
+const adminApiKeySchema = z
+  .string({
+    required_error:
+      'Set SUPABASE_SECRET_KEY (preferred) or SUPABASE_SERVICE_ROLE_KEY (legacy fallback).',
+  })
+  .min(20, {
+    message:
+      'Supabase admin API key is too short. Use a secret key (sb_secret_...) or legacy service_role JWT.',
+  })
+  .refine(value => isSecretKey(value) || isLegacyJwtKey(value), {
+    message:
+      'Supabase admin API key must be a secret key (sb_secret_...) or legacy service_role JWT.',
+  })
+
 const publicEnvSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z
     .string()
     .url({ message: 'NEXT_PUBLIC_SUPABASE_URL must be a valid URL' })
     .startsWith('https://', { message: 'NEXT_PUBLIC_SUPABASE_URL must use HTTPS' }),
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: z
-    .string()
-    .min(100, { message: 'NEXT_PUBLIC_SUPABASE_ANON_KEY is too short to be a valid JWT' })
-    .startsWith('eyJ', { message: 'NEXT_PUBLIC_SUPABASE_ANON_KEY must be a JWT token' }),
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: publicApiKeySchema,
   NEXT_PUBLIC_SITE_URL: z
     .string()
     .url({ message: 'NEXT_PUBLIC_SITE_URL must be a valid URL' }),
 })
 
 const serverOnlyEnvSchema = z.object({
-  SUPABASE_SERVICE_ROLE_KEY: z
-    .string()
-    .min(100, { message: 'SUPABASE_SERVICE_ROLE_KEY is too short to be a valid JWT' })
-    .startsWith('eyJ', { message: 'SUPABASE_SERVICE_ROLE_KEY must be a JWT token' })
-    .optional(),
+  SUPABASE_SECRET_KEY: adminApiKeySchema.optional(),
   NODE_ENV: z.enum(['development', 'production', 'test']),
 })
 
 const serverEnvSchema = publicEnvSchema.merge(serverOnlyEnvSchema)
-
-type EnvInput = Record<string, string | undefined>
 
 function formatValidationError(
   prefix: string,
@@ -41,7 +82,7 @@ function formatValidationError(
 export function parsePublicEnv(input: EnvInput) {
   const parsed = publicEnvSchema.safeParse({
     NEXT_PUBLIC_SUPABASE_URL: input.NEXT_PUBLIC_SUPABASE_URL,
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: input.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: resolvePublicApiKey(input),
     NEXT_PUBLIC_SITE_URL: input.NEXT_PUBLIC_SITE_URL,
   })
 
@@ -57,9 +98,9 @@ export function parsePublicEnv(input: EnvInput) {
 export function parseServerEnv(input: EnvInput) {
   const parsed = serverEnvSchema.safeParse({
     NEXT_PUBLIC_SUPABASE_URL: input.NEXT_PUBLIC_SUPABASE_URL,
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: input.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: resolvePublicApiKey(input),
     NEXT_PUBLIC_SITE_URL: input.NEXT_PUBLIC_SITE_URL,
-    SUPABASE_SERVICE_ROLE_KEY: input.SUPABASE_SERVICE_ROLE_KEY,
+    SUPABASE_SECRET_KEY: resolveAdminApiKey(input),
     NODE_ENV: input.NODE_ENV ?? 'development',
   })
 
@@ -100,6 +141,6 @@ export function getServerEnv() {
   return cachedServerEnv
 }
 
-export function hasServiceRoleKey(env = getServerEnv()): boolean {
-  return typeof env.SUPABASE_SERVICE_ROLE_KEY === 'string' && env.SUPABASE_SERVICE_ROLE_KEY.length > 0
+export function hasAdminApiKey(env = getServerEnv()): boolean {
+  return typeof env.SUPABASE_SECRET_KEY === 'string' && env.SUPABASE_SECRET_KEY.length > 0
 }
