@@ -19,13 +19,13 @@
     "next": "14.2.35",
     "next-themes": "^0.3.0",
     "react": "^18",
-    "react-dom": "^18",
+    "react-dom": "^19",
     "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/node": "^20",
     "@types/react": "^18",
-    "@types/react-dom": "^18",
+    "@types/react-dom": "^19",
     "@vitest/coverage-v8": "^1.6.1",
     "autoprefixer": "^10.0.1",
     "dotenv-cli": "^8.0.0",
