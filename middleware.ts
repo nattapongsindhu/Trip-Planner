@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { getServerEnv } from '@/lib/env'
+import { getOptionalUser } from '@/lib/supabaseAuth'
 
 export async function middleware(request: NextRequest) {
   const env = getServerEnv()
@@ -27,7 +28,7 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  await supabase.auth.getUser()
+  await getOptionalUser(supabase)
 
   return supabaseResponse
 }

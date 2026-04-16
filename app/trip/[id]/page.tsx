@@ -7,6 +7,7 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 import { DayList } from '@/components/DayList'
 import { HotelList } from '@/components/HotelList'
 import { BudgetTracker } from '@/components/BudgetTracker'
+import { getOptionalUser } from '@/lib/supabaseAuth'
 import type { Trip, Day, Hotel, BudgetItem } from '@/types'
 
 type Props = { params: { id: string } }
@@ -22,18 +23,25 @@ export default async function TripPage({ params }: Props) {
     { data: days, error: daysError },
     { data: hotels, error: hotelsError },
     { data: budgetItems, error: budgetError },
-    { data: { user } },
+    user,
   ] = await Promise.all([
     supabase.from('trips').select('*').eq('id', params.id).single(),
     supabase.from('days').select('*').eq('trip_id', params.id).order('day_number'),
     supabase.from('hotels').select('*').eq('trip_id', params.id).order('city'),
     supabase.from('budget_items').select('*').eq('trip_id', params.id),
-    supabase.auth.getUser(),
+    getOptionalUser(supabase),
   ])
 
   if (tripError?.code === 'PGRST116' || !trip) notFound()
 
   if (tripError || daysError || hotelsError || budgetError) {
+    console.error('Trip page resource load failed.', {
+      tripId: params.id,
+      tripError,
+      daysError,
+      hotelsError,
+      budgetError,
+    })
     throw new Error('Failed to load one or more trip resources.')
   }
 

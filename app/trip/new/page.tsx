@@ -3,10 +3,11 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabaseServer'
 import { NewTripForm } from '@/components/NewTripForm'
+import { getOptionalUser } from '@/lib/supabaseAuth'
 
 export default async function NewTripPage() {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getOptionalUser(supabase)
 
   if (!user) redirect('/')
 
