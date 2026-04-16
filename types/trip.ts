@@ -6,6 +6,7 @@ export type Trip = {
   end_date: string | null
   budget_eur: number
   is_template: boolean
+  is_public: boolean // added for visibility control (migration 003)
   created_at: string
 }
 

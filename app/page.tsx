@@ -64,12 +64,26 @@ export default async function HomePage() {
                 <h2 className="font-semibold text-base leading-snug line-clamp-2">
                   {trip.title}
                 </h2>
-                {trip.is_template && (
-                  <span className="shrink-0 text-xs px-2 py-0.5 rounded-full bg-accent
-                                   text-muted-foreground border">
-                    template
-                  </span>
-                )}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {trip.is_template && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-accent
+                                     text-muted-foreground border">
+                      template
+                    </span>
+                  )}
+                  {/* Public/Private badge — visible to everyone for transparency */}
+                  {trip.is_public ? (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/10
+                                     text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                      public
+                    </span>
+                  ) : (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-muted
+                                     text-muted-foreground border">
+                      private
+                    </span>
+                  )}
+                </div>
               </div>
 
               <p className="text-sm text-muted-foreground line-clamp-1 mb-4">

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { VisibilityToggle } from './VisibilityToggle'
 import type { Trip, TripUpdate } from '@/types'
 
 type Props = { trip: Trip }
@@ -64,100 +65,106 @@ export function TripEditForm({ trip }: Props) {
   }
 
   return (
-    <form onSubmit={handleSave} className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5">
 
-      <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium">Title</label>
-        <input
-          type="text"
-          value={form.title ?? ''}
-          onChange={e => set('title', e.target.value)}
-          className="rounded-lg border bg-background px-3 py-2 text-sm
-                     focus:outline-none focus:ring-2 focus:ring-primary/30"
-        />
-      </div>
+      {/* Visibility toggle — separate from the form because it saves on click, not submit */}
+      <VisibilityToggle tripId={trip.id} initialValue={trip.is_public} />
 
-      <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium">Destination</label>
-        <input
-          type="text"
-          value={form.destination ?? ''}
-          onChange={e => set('destination', e.target.value)}
-          className="rounded-lg border bg-background px-3 py-2 text-sm
-                     focus:outline-none focus:ring-2 focus:ring-primary/30"
-        />
-      </div>
+      <form onSubmit={handleSave} className="flex flex-col gap-5">
 
-      <div className="grid grid-cols-2 gap-4">
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">Start date</label>
+          <label className="text-sm font-medium">Title</label>
           <input
-            type="date"
-            value={form.start_date ?? ''}
-            onChange={e => set('start_date', e.target.value || null)}
+            type="text"
+            value={form.title ?? ''}
+            onChange={e => set('title', e.target.value)}
             className="rounded-lg border bg-background px-3 py-2 text-sm
                        focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>
+
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">End date</label>
+          <label className="text-sm font-medium">Destination</label>
           <input
-            type="date"
-            value={form.end_date ?? ''}
-            onChange={e => set('end_date', e.target.value || null)}
+            type="text"
+            value={form.destination ?? ''}
+            onChange={e => set('destination', e.target.value)}
             className="rounded-lg border bg-background px-3 py-2 text-sm
                        focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>
-      </div>
 
-      <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium">Budget (EUR)</label>
-        <input
-          type="number"
-          min={0}
-          step={10}
-          value={form.budget_eur ?? 0}
-          onChange={e => set('budget_eur', Number(e.target.value))}
-          className="rounded-lg border bg-background px-3 py-2 text-sm
-                     focus:outline-none focus:ring-2 focus:ring-primary/30"
-        />
-      </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium">Start date</label>
+            <input
+              type="date"
+              value={form.start_date ?? ''}
+              onChange={e => set('start_date', e.target.value || null)}
+              className="rounded-lg border bg-background px-3 py-2 text-sm
+                         focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium">End date</label>
+            <input
+              type="date"
+              value={form.end_date ?? ''}
+              onChange={e => set('end_date', e.target.value || null)}
+              className="rounded-lg border bg-background px-3 py-2 text-sm
+                         focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+        </div>
 
-      <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          id="is_template"
-          checked={form.is_template ?? false}
-          onChange={e => set('is_template', e.target.checked)}
-          className="accent-primary"
-        />
-        <label htmlFor="is_template" className="text-sm text-muted-foreground">
-          Save as template
-        </label>
-      </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium">Budget (EUR)</label>
+          <input
+            type="number"
+            min={0}
+            step={10}
+            value={form.budget_eur ?? 0}
+            onChange={e => set('budget_eur', Number(e.target.value))}
+            className="rounded-lg border bg-background px-3 py-2 text-sm
+                       focus:outline-none focus:ring-2 focus:ring-primary/30"
+          />
+        </div>
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="is_template"
+            checked={form.is_template ?? false}
+            onChange={e => set('is_template', e.target.checked)}
+            className="accent-primary"
+          />
+          <label htmlFor="is_template" className="text-sm text-muted-foreground">
+            Save as template
+          </label>
+        </div>
 
-      <div className="flex items-center justify-between pt-2">
-        <button
-          type="button"
-          onClick={handleDelete}
-          disabled={deleting}
-          className="text-sm text-destructive hover:underline disabled:opacity-50"
-        >
-          {deleting ? 'Deleting…' : 'Delete trip'}
-        </button>
-        <button
-          type="submit"
-          disabled={loading}
-          className="rounded-lg bg-primary text-primary-foreground px-5 py-2 text-sm
-                     font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
-        >
-          {loading ? 'Saving…' : 'Save changes'}
-        </button>
-      </div>
+        {error && <p className="text-sm text-destructive">{error}</p>}
 
-    </form>
+        <div className="flex items-center justify-between pt-2">
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={deleting}
+            className="text-sm text-destructive hover:underline disabled:opacity-50"
+          >
+            {deleting ? 'Deleting…' : 'Delete trip'}
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="rounded-lg bg-primary text-primary-foreground px-5 py-2 text-sm
+                       font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+          >
+            {loading ? 'Saving…' : 'Save changes'}
+          </button>
+        </div>
+
+      </form>
+    </div>
   )
 }
