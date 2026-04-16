@@ -1,5 +1,3 @@
-// Refreshes the Supabase session on every request
-// Required for server-side auth to work correctly with Next.js App Router
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
@@ -14,7 +12,7 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll()
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: { name: string; value: string; options?: object }[]) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           )
@@ -27,7 +25,6 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Must call getUser() here — not getSession() — to properly refresh the JWT
   await supabase.auth.getUser()
 
   return supabaseResponse
