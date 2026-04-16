@@ -1,10 +1,22 @@
 # Trip Planner
 
+[![Tests](https://github.com/nattapongsindhu/Trip-Planner/actions/workflows/test.yml/badge.svg)](https://github.com/nattapongsindhu/Trip-Planner/actions/workflows/test.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-98.6%25-blue.svg)](https://github.com/nattapongsindhu/Trip-Planner)
+
 A full-stack multi-trip planning application built with Next.js 14, TypeScript, Supabase, and Tailwind CSS.
 
 Designed as a portfolio project demonstrating CRUD operations, server-side authentication, Row Level Security, optimistic UI updates, and real-time budget tracking.
 
-**Live demo:** `https://your-deployment.vercel.app`
+**Live demo:** https://trip-planner-rho-coral.vercel.app
+
+---
+
+## About the developer
+
+Built by **Nattapong Sindhu** — a student studying IT Cybersecurity at Los Angeles City College while working full-time as a USPS Maintenance Mechanic. This project demonstrates production-grade security practices (Row Level Security, magic link authentication, environment variable validation) learned through coursework and self-study, applied to a real full-stack application.
+
+**Focus areas:** IT Security · DevSecOps · Production workflows · Defense in depth
 
 ---
 
@@ -12,14 +24,13 @@ Designed as a portfolio project demonstrating CRUD operations, server-side authe
 
 - **Multi-trip management** — create, edit, and delete multiple trips
 - **Day-by-day itinerary** — 15-day itinerary with city, transport, highlights, and cost per day
+- **Per-trip visibility control** — mark trips as public or private with database-enforced access policies
 - **Day notes** — private notes on each day, editable by admin only
 - **Hotel tracking** — compare options per city, mark selected accommodation
 - **Budget tracker** — line items grouped by category, toggle between estimate and actual
 - **Progress tracking** — mark days as done, visual progress bar
-- **Public read / private write** — anyone can view, only authenticated admin can edit
+- **Public read / private write** — public trips viewable by anyone, editing requires authentication
 - **Light + dark mode** — system preference detected, manual toggle available
-- **Template trips** — flag any trip as a template to reuse for future trips
-- **Seed data included** — Germany & Eastern Europe 15-day trip pre-loaded
 
 ---
 
@@ -32,9 +43,48 @@ Designed as a portfolio project demonstrating CRUD operations, server-side authe
 | Database | Supabase (PostgreSQL) |
 | Auth | Supabase Auth (magic link) |
 | Styling | Tailwind CSS |
-| Theme | next-themes |
+| Validation | Zod (environment variables) |
 | Testing | Vitest |
-| Deployment | Vercel |
+| CI/CD | GitHub Actions → Vercel |
+
+---
+
+## Security
+
+This project takes security seriously. Key measures:
+
+- **Row Level Security** enforced at the PostgreSQL layer — not just in application code
+- **Magic link authentication** — no passwords stored in the database
+- **Environment variable validation** at startup via Zod (see `lib/env.ts`)
+- **Separate `anon` and `service_role` keys** — service role key is never exposed to client code
+- **Automated testing** on every pull request via GitHub Actions
+- **HTTPS enforced** by Vercel
+- **No secrets in source control** — `.env.local` in `.gitignore`
+
+See [`SECURITY.md`](./SECURITY.md) for the vulnerability disclosure policy.
+
+---
+
+## Documentation
+
+- [**Setup Guide**](./docs/SETUP.md) — local development and deployment
+- [**Security Policy**](./SECURITY.md) — vulnerability disclosure
+- [**Privacy Policy**](https://trip-planner-rho-coral.vercel.app/privacy) — data handling
+- [**Terms of Service**](https://trip-planner-rho-coral.vercel.app/terms) — usage terms
+
+---
+
+## Quick start
+
+```bash
+git clone https://github.com/nattapongsindhu/Trip-Planner.git
+cd Trip-Planner
+npm install
+cp .env.example .env.local  # fill in Supabase keys
+npm run dev
+```
+
+Full instructions in [`docs/SETUP.md`](./docs/SETUP.md).
 
 ---
 
@@ -43,10 +93,9 @@ Designed as a portfolio project demonstrating CRUD operations, server-side authe
 ```
 /app
   page.tsx                     trips list — Server Component
-  layout.tsx                   root layout with ThemeProvider
-  globals.css                  Tailwind base + CSS variables
-  not-found.tsx                404 page
-  middleware.ts                Supabase session refresh
+  layout.tsx                   root layout with ThemeProvider + Footer
+  privacy/page.tsx             privacy policy page
+  terms/page.tsx               terms of service page
   auth/callback/route.ts       magic link redirect handler
   trip/
     new/page.tsx               create trip — protected
@@ -67,6 +116,8 @@ Designed as a portfolio project demonstrating CRUD operations, server-side authe
   ThemeProvider.tsx            next-themes wrapper
   ThemeToggle.tsx              light/dark toggle button
   AuthButton.tsx               magic link sign-in dropdown
+  Footer.tsx                   legal links + copyright
+  VisibilityToggle.tsx         public/private toggle per trip
   NewTripButton.tsx            navigates to /trip/new
   NewTripForm.tsx              create trip form
   TripEditForm.tsx             edit + delete trip form
@@ -78,6 +129,7 @@ Designed as a portfolio project demonstrating CRUD operations, server-side authe
   BudgetTracker.tsx            summary cards + line items with useReducer
 
 /lib
+  env.ts                       Zod-validated environment variables
   supabaseClient.ts            browser client for Client Components
   supabaseServer.ts            server client for Server Components + Route Handlers
   formatters.ts                pure utility functions
@@ -90,151 +142,12 @@ Designed as a portfolio project demonstrating CRUD operations, server-side authe
   migrations/
     001_init.sql               table definitions + indexes
     002_rls.sql                Row Level Security policies
+    003_visibility.sql         is_public flag + privacy-aware RLS
   seed.ts                      Germany & Eastern Europe trip seed data
+
+/.github/workflows
+  test.yml                     automated tests on PR
 ```
-
----
-
-## Prerequisites
-
-- Node.js 20+
-- A [Supabase](https://supabase.com) account (free tier)
-- A [Vercel](https://vercel.com) account (free tier)
-
----
-
-## Local setup
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/your-username/trip-planner.git
-cd trip-planner
-```
-
-### 2. Install dependencies
-
-```bash
-npm install
-```
-
-### 3. Create a Supabase project
-
-1. Go to [supabase.com](https://supabase.com) and create a new project
-2. Wait for provisioning to complete (~2 minutes)
-3. Go to **Project Settings → API**
-4. Copy your **Project URL** and **anon public** key
-
-### 4. Configure environment variables
-
-```bash
-cp .env.example .env.local
-```
-
-Fill in `.env.local`:
-
-```bash
-NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
-SUPABASE_SERVICE_ROLE_KEY=eyJ...
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
-```
-
-> `SUPABASE_SERVICE_ROLE_KEY` is under **Project Settings → API → service_role**.
-> Never commit this key — it bypasses Row Level Security.
-
-### 5. Run database migrations
-
-Go to your Supabase project → **SQL Editor**, then run each file in order:
-
-```
-supabase/migrations/001_init.sql
-supabase/migrations/002_rls.sql
-```
-
-Paste the contents of each file and click **Run**.
-
-### 6. Seed the database
-
-```bash
-npx ts-node supabase/seed.ts
-```
-
-Inserts the Germany & Eastern Europe trip with all 15 days, 10 hotels, and 9 budget items.
-
-### 7. Start the development server
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000).
-
----
-
-## Authentication
-
-This app uses **Supabase magic link** — no passwords stored anywhere.
-
-To sign in as admin:
-
-1. Click **Sign in** in the top right corner
-2. Enter your email address
-3. Check your email for the magic link
-4. Click the link — you will be redirected back and signed in automatically
-
-Once signed in you can create trips, edit days, select hotels, manage budget items, and mark days as done.
-
----
-
-## Running tests
-
-```bash
-npm run test
-```
-
-Tests cover utility functions in `/lib/formatters.ts`:
-
-- `formatEur` — currency formatting
-- `formatCostRange` — cost range display
-- `tripDuration` — date difference calculation
-- `countryFlag` — country code to emoji conversion
-- `calcBudgetSummary` — budget aggregation logic
-- `calcProgress` — trip completion percentage
-
----
-
-## Deployment
-
-### Deploy to Vercel
-
-```bash
-npm install -g vercel
-vercel
-```
-
-Or connect the GitHub repository in the Vercel dashboard for automatic deploys on push.
-
-### Environment variables on Vercel
-
-Add these under **Vercel → Project → Settings → Environment Variables**:
-
-| Key | Value |
-|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your Supabase anon key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Your Supabase service role key |
-| `NEXT_PUBLIC_SITE_URL` | Your Vercel deployment URL |
-
-### Update Supabase auth redirect URL
-
-After deploying:
-
-1. Go to Supabase → **Authentication → URL Configuration**
-2. Add your Vercel URL to **Redirect URLs**:
-   ```
-   https://your-deployment.vercel.app/auth/callback
-   ```
 
 ---
 
@@ -250,18 +163,40 @@ After deploying:
 
 **Separate `supabaseClient.ts` and `supabaseServer.ts`** — the browser client uses `createBrowserClient`, the server client uses `createServerClient` with cookie handling. Mixing these causes session bugs.
 
+**Zod environment validation** — `lib/env.ts` validates all environment variables at application startup. The app refuses to start if any required variable is missing or malformed, preventing silent configuration bugs.
+
+---
+
+## Running tests
+
+```bash
+npm run test           # run once
+npm run test:watch     # watch mode
+```
+
+Tests run automatically on every pull request via GitHub Actions.
+
 ---
 
 ## Future improvements
 
-- Row Level Security scoped per user (multi-user support)
-- Photo URL field per day
+**Near-term**
+- Multi-user support with `user_id`-scoped RLS policies
+- Rate limiting on API routes (Upstash Redis or Vercel Edge Config)
+- Error tracking (Sentry or LogRocket)
+
+**Medium-term**
+- Photo upload per day (Supabase Storage)
 - Packing checklist table
 - Transport leg table with booking links
-- PDF export via Puppeteer
+
+**Long-term**
+- PDF export (Puppeteer / React PDF)
+- Internationalization (next-intl)
+- Google Maps integration
 
 ---
 
 ## License
 
-MIT
+MIT — see [`LICENSE`](./LICENSE).

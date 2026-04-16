@@ -1,0 +1,67 @@
+name: Test & Lint
+
+# Run on every push to main and every pull request
+# This enforces code quality before merging
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel outdated runs when new commits are pushed to the same PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Run tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Vitest
+        # Tests must pass before code can be merged into main
+        run: npm run test
+
+      - name: Type check
+        # Catch TypeScript errors that would fail the Vercel build
+        run: npx tsc --noEmit
+
+  build:
+    name: Verify production build
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Next.js app
+        # Use dummy env vars for build step — real values come from Vercel at runtime
+        # This just verifies the code compiles correctly
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder.placeholderplaceholderplaceholderplaceholderplaceholderplaceholderplaceholderplaceholder
+          NEXT_PUBLIC_SITE_URL: https://placeholder.vercel.app
+        run: npm run build
