@@ -61,6 +61,17 @@ describe('parsePublicEnv', () => {
     ).toBe(validPublishableKey)
   })
 
+  it('falls back to the legacy anon key when the new public key is malformed', () => {
+    expect(
+      parsePublicEnv({
+        NEXT_PUBLIC_SUPABASE_URL: validUrl,
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_...',
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: validLegacyJwt,
+        NEXT_PUBLIC_SITE_URL: validSiteUrl,
+      }).NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+    ).toBe(validLegacyJwt)
+  })
+
   it('throws a readable error when a public variable is missing', () => {
     expect(() =>
       parsePublicEnv({
@@ -112,6 +123,19 @@ describe('parseServerEnv', () => {
         NEXT_PUBLIC_SUPABASE_URL: validUrl,
         NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: validPublishableKey,
         NEXT_PUBLIC_SITE_URL: validSiteUrl,
+        SUPABASE_SERVICE_ROLE_KEY: validLegacyJwt,
+        NODE_ENV: 'production',
+      }).SUPABASE_SECRET_KEY
+    ).toBe(validLegacyJwt)
+  })
+
+  it('falls back to the legacy service role key when the new admin key is malformed', () => {
+    expect(
+      parseServerEnv({
+        NEXT_PUBLIC_SUPABASE_URL: validUrl,
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: validPublishableKey,
+        NEXT_PUBLIC_SITE_URL: validSiteUrl,
+        SUPABASE_SECRET_KEY: 'sb_secret_...',
         SUPABASE_SERVICE_ROLE_KEY: validLegacyJwt,
         NODE_ENV: 'production',
       }).SUPABASE_SECRET_KEY

@@ -2,6 +2,11 @@ import { z } from 'zod'
 
 type EnvInput = Record<string, string | undefined>
 
+function normalizeKey(value: string | undefined) {
+  const trimmed = value?.trim()
+  return trimmed ? trimmed : undefined
+}
+
 function isLegacyJwtKey(value: string) {
   return value.startsWith('eyJ')
 }
@@ -14,12 +19,34 @@ function isSecretKey(value: string) {
   return value.startsWith('sb_secret_')
 }
 
+function isValidPublicApiKey(value: string) {
+  return value.length >= 20 && (isPublishableKey(value) || isLegacyJwtKey(value))
+}
+
+function isValidAdminApiKey(value: string) {
+  return value.length >= 20 && (isSecretKey(value) || isLegacyJwtKey(value))
+}
+
 function resolvePublicApiKey(input: EnvInput) {
-  return input.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? input.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const preferred = normalizeKey(input.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY)
+  const fallback = normalizeKey(input.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+
+  if (preferred && isValidPublicApiKey(preferred)) {
+    return preferred
+  }
+
+  return fallback ?? preferred
 }
 
 function resolveAdminApiKey(input: EnvInput) {
-  return input.SUPABASE_SECRET_KEY ?? input.SUPABASE_SERVICE_ROLE_KEY
+  const preferred = normalizeKey(input.SUPABASE_SECRET_KEY)
+  const fallback = normalizeKey(input.SUPABASE_SERVICE_ROLE_KEY)
+
+  if (preferred && isValidAdminApiKey(preferred)) {
+    return preferred
+  }
+
+  return fallback ?? preferred
 }
 
 const publicApiKeySchema = z
