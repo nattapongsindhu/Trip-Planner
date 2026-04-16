@@ -11,6 +11,7 @@ const EMPTY: TripInsert = {
   end_date: null,
   budget_eur: 0,
   is_template: false,
+  is_public: false,
 }
 
 export function NewTripForm() {
@@ -70,7 +71,7 @@ export function NewTripForm() {
         <label className="text-sm font-medium">Destination</label>
         <input
           type="text"
-          placeholder="Munich → Prague → Vienna → Budapest"
+          placeholder="Munich to Prague to Vienna to Budapest"
           value={form.destination}
           onChange={e => set('destination', e.target.value)}
           className="rounded-lg border bg-background px-3 py-2 text-sm
@@ -114,17 +115,32 @@ export function NewTripForm() {
         />
       </div>
 
-      <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          id="is_template"
-          checked={form.is_template}
-          onChange={e => set('is_template', e.target.checked)}
-          className="accent-primary"
-        />
-        <label htmlFor="is_template" className="text-sm text-muted-foreground">
-          Save as template for future trips
-        </label>
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="is_template"
+            checked={form.is_template}
+            onChange={e => set('is_template', e.target.checked)}
+            className="accent-primary"
+          />
+          <label htmlFor="is_template" className="text-sm text-muted-foreground">
+            Save as template for future trips
+          </label>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="is_public"
+            checked={form.is_public}
+            onChange={e => set('is_public', e.target.checked)}
+            className="accent-primary"
+          />
+          <label htmlFor="is_public" className="text-sm text-muted-foreground">
+            Make this trip public (visible to everyone)
+          </label>
+        </div>
       </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
