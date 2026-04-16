@@ -1,19 +1,15 @@
 # Setup Guide
 
-Complete setup instructions for running Trip Planner locally and deploying to production.
-
----
+Complete setup instructions for running Trip Planner locally and deploying it to Vercel.
 
 ## Prerequisites
 
 - Node.js 20 or higher
-- A [Supabase](https://supabase.com) account (free tier is sufficient)
-- A [Vercel](https://vercel.com) account (free tier is sufficient)
-- Git installed locally
+- Git
+- A [Supabase](https://supabase.com) account
+- A [Vercel](https://vercel.com) account
 
----
-
-## Local Development
+## Local development
 
 ### 1. Clone and install
 
@@ -25,19 +21,18 @@ npm install
 
 ### 2. Create a Supabase project
 
-1. Sign in at [supabase.com/dashboard](https://supabase.com/dashboard)
-2. Click **New project**
-3. Enter project name, generate a strong database password, choose the closest region
-4. Wait ~2 minutes for provisioning
+1. Sign in at [supabase.com/dashboard](https://supabase.com/dashboard).
+2. Create a new project.
+3. Save the project URL, publishable key, and secret key from **Project Settings -> API Keys**.
 
 ### 3. Run database migrations
 
-Open the Supabase **SQL Editor** and run each migration file in order:
+Open the Supabase SQL Editor and run each migration in order:
 
-```
-supabase/migrations/001_init.sql        # creates tables
-supabase/migrations/002_rls.sql         # enables Row Level Security
-supabase/migrations/003_visibility.sql  # adds is_public column for privacy control
+```text
+supabase/migrations/001_init.sql
+supabase/migrations/002_rls.sql
+supabase/migrations/003_visibility.sql
 ```
 
 ### 4. Configure environment variables
@@ -46,26 +41,31 @@ supabase/migrations/003_visibility.sql  # adds is_public column for privacy cont
 cp .env.example .env.local
 ```
 
-Fill in the four required values from **Supabase → Project Settings → API Keys**:
+Fill in these values:
 
 | Variable | Source | Notes |
-|---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Project Settings → API | Public — exposed to browser |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Project Settings → API Keys | Public — subject to RLS |
-| `SUPABASE_SERVICE_ROLE_KEY` | Project Settings → API Keys | **SECRET — bypasses RLS** |
-| `NEXT_PUBLIC_SITE_URL` | Your deployment URL | Used for magic link redirect |
+| --- | --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase API settings | Public browser value |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase API keys | Public browser value, still governed by RLS |
+| `SUPABASE_SECRET_KEY` | Supabase API keys | Secret, server-only, never commit |
+| `NEXT_PUBLIC_SITE_URL` | Local or deployed URL | Used for auth redirects |
 
-> **Never commit `.env.local` to Git.** It is already listed in `.gitignore`.
+Legacy fallback during rotation:
 
-### 5. Seed the database (optional)
+| Variable | Status | Notes |
+| --- | --- | --- |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Optional temporary fallback | Accepted while you roll out the publishable key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Optional temporary fallback | Accepted while you roll out the secret key |
+
+### 5. Seed sample data
 
 ```bash
-DOTENV_CONFIG_PATH=.env.local npx ts-node -r dotenv/config supabase/seed.ts
+npm run seed
 ```
 
-This inserts a sample trip with 15 days, 10 hotels, and 9 budget items.
+This command loads `.env.local` automatically and inserts the sample trip, itinerary, hotels, and budget items.
 
-### 6. Run locally
+### 6. Start the app
 
 ```bash
 npm run dev
@@ -73,7 +73,16 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
----
+## Local validation checklist
+
+Before pushing changes, run:
+
+```bash
+npm run lint
+npm run typecheck
+npm run test:coverage
+npm run build
+```
 
 ## Deploying to Vercel
 
@@ -83,65 +92,49 @@ Open [http://localhost:3000](http://localhost:3000).
 git push origin main
 ```
 
-### 2. Import the repository on Vercel
+### 2. Import the repository in Vercel
 
-1. Go to [vercel.com/new](https://vercel.com/new)
-2. Import the `Trip-Planner` repository
-3. Vercel auto-detects Next.js — no configuration needed
+1. Go to [vercel.com/new](https://vercel.com/new).
+2. Import the `Trip-Planner` repository.
+3. Accept the default Next.js build settings.
 
 ### 3. Add environment variables
 
-In **Vercel → Project Settings → Environment Variables**, add the same four variables from step 4 above. For `NEXT_PUBLIC_SITE_URL`, use the Vercel deployment URL (e.g. `https://trip-planner-rho-coral.vercel.app`).
+Copy the same four preferred variables from `.env.local` into **Vercel -> Project Settings -> Environment Variables**.
 
-### 4. Update Supabase redirect URL
+For a safe rotation:
 
-In **Supabase → Authentication → URL Configuration**, add your Vercel URL to **Redirect URLs**:
+1. Add the new publishable and secret keys in Vercel first.
+2. Redeploy production and preview.
+3. Verify auth, reads, and write flows still work.
+4. Remove legacy fallback variables and revoke the old key only after the new deployment is healthy.
 
-```
+### 4. Update Supabase auth redirect URLs
+
+In **Supabase -> Authentication -> URL Configuration**, add:
+
+```text
 https://your-deployment.vercel.app/auth/callback
 ```
 
-Without this step, magic link sign-in will redirect to `localhost` and fail.
+### 5. Configure repository protections
 
-### 5. Deploy
-
-Vercel deploys automatically on every push to `main`.
-
----
-
-## Running tests
-
-```bash
-npm run test           # run once
-npm run test:watch     # watch mode
-```
-
-Tests run automatically on every pull request via GitHub Actions (see `.github/workflows/test.yml`).
-
----
+After the first successful GitHub Actions run, enable the recommended branch protection settings from [Repository Governance](./REPOSITORY-GOVERNANCE.md).
 
 ## Troubleshooting
 
-### Build fails with TypeScript error
+### Build fails because of missing environment variables
 
-If you see `Parameter 'cookiesToSet' implicitly has an 'any' type`, ensure the type annotation is present in `lib/supabaseServer.ts` and `middleware.ts`:
+The app now validates environment variables before creating Supabase clients. Double-check `.env.local` against `.env.example`.
 
-```typescript
-setAll(cookiesToSet: { name: string; value: string; options?: object }[]) {
-```
+### Seed command fails with a missing admin key
 
-### Seed script cannot find environment variables
-
-`ts-node` does not auto-load `.env.local`. Use:
-
-```bash
-DOTENV_CONFIG_PATH=.env.local npx ts-node -r dotenv/config supabase/seed.ts
-```
-
-### Supabase project paused
-
-Supabase free tier pauses projects after 7 days of inactivity. Go to your Supabase dashboard and click **Restore project** — no data is lost.
+`npm run seed` requires `SUPABASE_SECRET_KEY` in `.env.local`. `SUPABASE_SERVICE_ROLE_KEY` is still accepted as a temporary fallback during migration.
 
 ### Magic link redirects to localhost in production
 
-You forgot to update the redirect URL in Supabase. See **Deploying to Vercel → Step 4**.
+`NEXT_PUBLIC_SITE_URL` or the Supabase redirect URL is still pointing to `http://localhost:3000`.
+
+### Supabase project appears offline
+
+Supabase free-tier projects may pause after inactivity. Restore the project in the dashboard and rerun the request.

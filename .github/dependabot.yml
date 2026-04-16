@@ -1,0 +1,37 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - security
+    commit-message:
+      prefix: chore(deps)
+    groups:
+      next-runtime:
+        patterns:
+          - next
+          - eslint-config-next
+      testing-tooling:
+        patterns:
+          - vitest
+          - '@vitest/*'
+          - tsx
+          - dotenv-cli
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:30'
+    labels:
+      - dependencies
+      - github-actions
+    commit-message:
+      prefix: chore(actions)

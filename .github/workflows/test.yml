@@ -1,21 +1,21 @@
-name: Test & Lint
+name: CI
 
-# Run on every push to main and every pull request
-# This enforces code quality before merging
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
 
-# Cancel outdated runs when new commits are pushed to the same PR
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  test:
-    name: Run tests
+  quality:
+    name: Quality
     runs-on: ubuntu-latest
 
     steps:
@@ -31,18 +31,26 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run Vitest
-        # Tests must pass before code can be merged into main
-        run: npm run test
+      - name: Run ESLint
+        run: npm run lint
 
-      - name: Type check
-        # Catch TypeScript errors that would fail the Vercel build
-        run: npx tsc --noEmit
+      - name: Run TypeScript typecheck
+        run: npm run typecheck
+
+      - name: Run Vitest with coverage thresholds
+        run: npm run test:coverage
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage
+          if-no-files-found: error
 
   build:
-    name: Verify production build
+    name: Build
     runs-on: ubuntu-latest
-    needs: test
+    needs: quality
 
     steps:
       - name: Checkout repository
@@ -58,10 +66,9 @@ jobs:
         run: npm ci
 
       - name: Build Next.js app
-        # Use dummy env vars for build step — real values come from Vercel at runtime
-        # This just verifies the code compiles correctly
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder.placeholderplaceholderplaceholderplaceholderplaceholderplaceholderplaceholderplaceholder
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_placeholderplaceholderplaceholderplaceholder
           NEXT_PUBLIC_SITE_URL: https://placeholder.vercel.app
+          NODE_ENV: production
         run: npm run build
