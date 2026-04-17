@@ -1,20 +1,19 @@
+// Day record — matches supabase `days` table after migration 004
+// All fields editable. country_code is 2-letter ISO (e.g. 'DE', 'CZ')
 export type Day = {
-  id: string
-  trip_id: string
-  day_number: number
-  city: string
-  country_code: string
-  highlights: string | null
-  transport: string | null
-  stay: string | null
-  cost_eur_min: number
-  cost_eur_max: number
-  note: string | null
-  is_done: boolean
-  book_by: string | null
-  is_transfer: boolean
+  id:           string
+  trip_id:      string
+  day_number:   number         // 1, 2, 3... (display order)
+  country_code: string         // 'DE', 'CZ' etc.
+  city:         string
+  stay:         string | null  // hotel name or 'Wombat's Munich — Night 1'
+  transport:    string | null  // how to get here
+  highlights:   string | null  // what to do
+  cost_range:   string | null  // '€65–95' (free-text, not strict)
+  notes:        string | null  // private notes
+  done:         boolean
+  created_at:   string
 }
 
-// partial update type — id is required, everything else optional
-export type DayUpdate = Pick<Day, 'id'> &
-  Partial<Pick<Day, 'note' | 'is_done' | 'city' | 'highlights' | 'transport' | 'stay'>>
+export type DayInsert = Omit<Day, 'id' | 'created_at' | 'done'> & { done?: boolean }
+export type DayUpdate = Partial<Omit<Day, 'id' | 'trip_id' | 'created_at'>>

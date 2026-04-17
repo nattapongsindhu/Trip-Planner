@@ -1,98 +1,134 @@
 'use client'
 
-import { useReducer, useCallback } from 'react'
+// DayList — manages array of day cards for one trip
+// Uses useReducer for explicit state transitions
+// All mutations go optimistic-first: UI updates immediately, reverts on failure
+import { useReducer } from 'react'
 import { DayCard } from './DayCard'
-import type { Day } from '@/types'
-
-type State = {
-  days: Day[]
-  saving: string | null // id of the day currently being saved
-}
+import type { Day, DayUpdate } from '@/types'
 
 type Action =
-  | { type: 'UPDATE_DAY';  payload: Day }
-  | { type: 'SET_SAVING';  id: string | null }
+  | { type: 'UPDATE'; id: string; patch: DayUpdate }
+  | { type: 'DELETE'; id: string }
+  | { type: 'ADD'; day: Day }
+  | { type: 'REVERT'; days: Day[] }
 
-function reducer(state: State, action: Action): State {
+function reducer(state: Day[], action: Action): Day[] {
   switch (action.type) {
-    case 'UPDATE_DAY':
-      return {
-        ...state,
-        days: state.days.map(d =>
-          d.id === action.payload.id ? action.payload : d
-        ),
-      }
-    case 'SET_SAVING':
-      return { ...state, saving: action.id }
-    default:
-      return state
+    case 'UPDATE': return state.map(d => d.id === action.id ? { ...d, ...action.patch } : d)
+    case 'DELETE': return state.filter(d => d.id !== action.id)
+    case 'ADD':    return [...state, action.day].sort((a, b) => a.day_number - b.day_number)
+    case 'REVERT': return action.days
   }
 }
 
 type Props = {
-  days: Day[]
-  tripId: string
-  isAdmin: boolean
+  tripId:      string
+  initialDays: Day[]
+  isAdmin:     boolean
 }
 
-export function DayList({ days: initialDays, tripId, isAdmin }: Props) {
-  const [state, dispatch] = useReducer(reducer, {
-    days: initialDays,
-    saving: null,
-  })
+export function DayList({ tripId, initialDays, isAdmin }: Props) {
+  const [days, dispatch] = useReducer(reducer, initialDays)
 
-  // optimistic toggle — updates UI immediately, reverts on server failure
-  const toggleDone = useCallback(async (day: Day) => {
-    const updated = { ...day, is_done: !day.is_done }
-    dispatch({ type: 'UPDATE_DAY', payload: updated })
-    dispatch({ type: 'SET_SAVING', id: day.id })
-
-    const res = await fetch(`/api/trips/${tripId}/days`, {
+  async function updateDay(id: string, patch: DayUpdate) {
+    const prev = days
+    dispatch({ type: 'UPDATE', id, patch })
+    const res = await fetch(`/api/trips/${tripId}/days/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: day.id, is_done: updated.is_done }),
+      body: JSON.stringify(patch),
     })
-
-    // revert to original state if the request failed
-    if (!res.ok) dispatch({ type: 'UPDATE_DAY', payload: day })
-
-    dispatch({ type: 'SET_SAVING', id: null })
-  }, [tripId])
-
-  // saves the note text for a specific day
-  const saveNote = useCallback(async (day: Day, note: string) => {
-    dispatch({ type: 'SET_SAVING', id: day.id })
-
-    const res = await fetch(`/api/trips/${tripId}/days`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: day.id, note }),
-    })
-
-    if (res.ok) {
-      const data: Day = await res.json()
-      dispatch({ type: 'UPDATE_DAY', payload: data })
-    }
-
-    dispatch({ type: 'SET_SAVING', id: null })
-  }, [tripId])
-
-  if (state.days.length === 0) {
-    return <p className="text-sm text-muted-foreground py-4">No days added yet.</p>
+    if (!res.ok) dispatch({ type: 'REVERT', days: prev })
   }
 
+  async function deleteDay(id: string) {
+    const prev = days
+    dispatch({ type: 'DELETE', id })
+    const res = await fetch(`/api/trips/${tripId}/days/${id}`, { method: 'DELETE' })
+    if (!res.ok) dispatch({ type: 'REVERT', days: prev })
+  }
+
+  async function addDay() {
+    const nextNum = Math.max(0, ...days.map(d => d.day_number)) + 1
+    const draft: Omit<Day, 'id' | 'created_at'> = {
+      trip_id: tripId,
+      day_number: nextNum,
+      country_code: '??',
+      city: 'New city',
+      stay: null,
+      transport: null,
+      highlights: null,
+      cost_range: null,
+      notes: null,
+      done: false,
+    }
+    const res = await fetch(`/api/trips/${tripId}/days`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(draft),
+    })
+    if (res.ok) {
+      const newDay: Day = await res.json()
+      dispatch({ type: 'ADD', day: newDay })
+    }
+  }
+
+  const doneCount = days.filter(d => d.done).length
+
   return (
-    <div className="flex flex-col gap-2">
-      {state.days.map(day => (
-        <DayCard
-          key={day.id}
-          day={day}
-          isAdmin={isAdmin}
-          saving={state.saving === day.id}
-          onToggleDone={toggleDone}
-          onSaveNote={saveNote}
-        />
-      ))}
-    </div>
+    <section className="space-y-4">
+
+      <div className="flex items-center justify-between">
+        <div className="flex items-baseline gap-2">
+          <h2 className="text-lg font-semibold">Itinerary</h2>
+          <span className="text-sm text-muted-foreground">{days.length} days</span>
+        </div>
+        {isAdmin && (
+          <button
+            onClick={addDay}
+            className="text-sm rounded-md border px-3 py-1.5 hover:bg-muted transition-colors"
+          >
+            + Add day
+          </button>
+        )}
+      </div>
+
+      {days.length > 0 && (
+        <div className="space-y-1">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>Progress</span>
+            <span>{doneCount} / {days.length} days done</span>
+          </div>
+          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full bg-primary transition-all duration-300"
+              style={{ width: days.length ? `${(doneCount / days.length) * 100}%` : '0%' }}
+            />
+          </div>
+        </div>
+      )}
+
+      {days.length === 0 ? (
+        <div className="text-center py-10 border border-dashed rounded-xl text-sm text-muted-foreground">
+          No days yet.
+          {isAdmin && <> Click <button onClick={addDay} className="underline hover:text-foreground">Add day</button> to start.</>}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {days.map(day => (
+            <DayCard
+              key={day.id}
+              day={day}
+              dayNum={day.day_number}
+              onUpdate={patch => updateDay(day.id, patch)}
+              onDelete={() => deleteDay(day.id)}
+              onToggleDone={() => updateDay(day.id, { done: !day.done })}
+            />
+          ))}
+        </div>
+      )}
+
+    </section>
   )
 }

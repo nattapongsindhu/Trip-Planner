@@ -1,182 +1,248 @@
 'use client'
 
-import { useReducer, useCallback } from 'react'
-import { formatEur, calcBudgetSummary } from '@/lib/formatters'
-import type { BudgetItem, BudgetCategory } from '@/types'
-
-type State = {
-  items: BudgetItem[]
-  saving: string | null
-}
+// BudgetTracker — grouped by category, inline edit for label + amount
+// Actual column shown only when any item has actual set
+import { useReducer, useState } from 'react'
+import { InlineEdit } from './InlineEdit'
+import type { BudgetItem } from '@/types'
 
 type Action =
-  | { type: 'UPDATE_ITEM'; payload: BudgetItem }
-  | { type: 'ADD_ITEM';    payload: BudgetItem }
-  | { type: 'DELETE_ITEM'; id: string }
-  | { type: 'SET_SAVING';  id: string | null }
+  | { type: 'UPDATE'; id: string; patch: Partial<BudgetItem> }
+  | { type: 'DELETE'; id: string }
+  | { type: 'ADD'; item: BudgetItem }
+  | { type: 'REVERT'; items: BudgetItem[] }
 
-function reducer(state: State, action: Action): State {
+function reducer(state: BudgetItem[], action: Action): BudgetItem[] {
   switch (action.type) {
-    case 'UPDATE_ITEM':
-      return {
-        ...state,
-        items: state.items.map(i =>
-          i.id === action.payload.id ? action.payload : i
-        ),
-      }
-    case 'ADD_ITEM':
-      return { ...state, items: [...state.items, action.payload] }
-    case 'DELETE_ITEM':
-      return { ...state, items: state.items.filter(i => i.id !== action.id) }
-    case 'SET_SAVING':
-      return { ...state, saving: action.id }
-    default:
-      return state
+    case 'UPDATE': return state.map(i => i.id === action.id ? { ...i, ...action.patch } : i)
+    case 'DELETE': return state.filter(i => i.id !== action.id)
+    case 'ADD':    return [...state, action.item]
+    case 'REVERT': return action.items
   }
 }
 
-const CATEGORY_LABELS: Record<BudgetCategory, string> = {
-  accommodation: 'Accommodation',
-  transport:     'Transport',
-  food:          'Food & drinks',
-  activities:    'Activities',
-  misc:          'Miscellaneous',
-}
+const DEFAULT_CATEGORIES = ['Transport', 'Food & drinks', 'Activities', 'Miscellaneous']
 
 type Props = {
-  items: BudgetItem[]
-  tripId: string
-  isAdmin: boolean
+  tripId:        string
+  initialItems:  BudgetItem[]
+  isAdmin:       boolean
 }
 
-export function BudgetTracker({ items: initialItems, tripId, isAdmin }: Props) {
-  const [state, dispatch] = useReducer(reducer, {
-    items: initialItems,
-    saving: null,
-  })
+export function BudgetTracker({ tripId, initialItems, isAdmin }: Props) {
+  const [items, dispatch] = useReducer(reducer, initialItems)
+  const [showActual, setShowActual] = useState(false)
 
-  const summary = calcBudgetSummary(state.items)
-
-  // optimistic toggle between estimate and actual — reverts on failure
-  const toggleActual = useCallback(async (item: BudgetItem) => {
-    const updated = { ...item, is_actual: !item.is_actual }
-    dispatch({ type: 'UPDATE_ITEM', payload: updated })
-    dispatch({ type: 'SET_SAVING', id: item.id })
-
-    const res = await fetch(`/api/trips/${tripId}/budget`, {
+  async function updateItem(id: string, patch: Partial<BudgetItem>) {
+    const prev = items
+    dispatch({ type: 'UPDATE', id, patch })
+    const res = await fetch(`/api/trips/${tripId}/budget/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: item.id, is_actual: updated.is_actual }),
+      body: JSON.stringify(patch),
     })
+    if (!res.ok) dispatch({ type: 'REVERT', items: prev })
+  }
 
-    if (!res.ok) dispatch({ type: 'UPDATE_ITEM', payload: item })
-    dispatch({ type: 'SET_SAVING', id: null })
-  }, [tripId])
+  async function deleteItem(id: string) {
+    const prev = items
+    dispatch({ type: 'DELETE', id })
+    const res = await fetch(`/api/trips/${tripId}/budget/${id}`, { method: 'DELETE' })
+    if (!res.ok) dispatch({ type: 'REVERT', items: prev })
+  }
 
-  // optimistic delete — re-adds the item if the request fails
-  const deleteItem = useCallback(async (item: BudgetItem) => {
-    dispatch({ type: 'DELETE_ITEM', id: item.id })
+  async function addItem(category: string) {
+    const draft = {
+      trip_id:          tripId,
+      category,
+      label:            'New item',
+      estimate_eur:     0,
+      actual_eur:       null,
+    }
+    const res = await fetch(`/api/trips/${tripId}/budget`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(draft),
+    })
+    if (res.ok) {
+      const newItem: BudgetItem = await res.json()
+      dispatch({ type: 'ADD', item: newItem })
+    }
+  }
 
-    const res = await fetch(
-      `/api/trips/${tripId}/budget?itemId=${item.id}`,
-      { method: 'DELETE' }
-    )
+  // group by category preserving insertion order
+  const grouped = items.reduce<Record<string, BudgetItem[]>>((acc, i) => {
+    if (!acc[i.category]) acc[i.category] = []
+    acc[i.category].push(i)
+    return acc
+  }, {})
 
-    if (!res.ok) dispatch({ type: 'ADD_ITEM', payload: item })
-  }, [tripId])
+  const categories = [
+    ...DEFAULT_CATEGORIES.filter(c => grouped[c]),
+    ...Object.keys(grouped).filter(c => !DEFAULT_CATEGORIES.includes(c)),
+  ]
+
+  const totalEstimate = items.reduce((sum, i) => sum + (i.estimate_eur ?? 0), 0)
+  const totalActual   = items.reduce((sum, i) => sum + (i.actual_eur ?? 0), 0)
+  const hasActuals    = items.some(i => i.actual_eur !== null && i.actual_eur > 0)
 
   return (
-    <div className="flex flex-col gap-4">
+    <section className="space-y-4">
 
-      {/* summary metric cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        <div className="rounded-xl border bg-card p-4">
-          <p className="text-xs text-muted-foreground mb-1">Total estimated</p>
-          <p className="text-xl font-semibold">{formatEur(summary.total_estimated)}</p>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Budget</h2>
+        {isAdmin && (
+          <div className="flex items-center gap-2">
+            {hasActuals && (
+              <button
+                onClick={() => setShowActual(x => !x)}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                {showActual ? 'Show estimates' : 'Show actuals'}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* summary cards */}
+      <div className="grid grid-cols-3 gap-2">
+        <div className="rounded-lg bg-muted/40 p-3">
+          <p className="text-xs text-muted-foreground">Total estimated</p>
+          <p className="text-xl font-semibold mt-1">€{totalEstimate.toLocaleString()}</p>
         </div>
-        <div className="rounded-xl border bg-card p-4">
-          <p className="text-xs text-muted-foreground mb-1">Total actual</p>
-          <p className="text-xl font-semibold">{formatEur(summary.total_actual)}</p>
+        <div className="rounded-lg bg-muted/40 p-3">
+          <p className="text-xs text-muted-foreground">Total actual</p>
+          <p className="text-xl font-semibold mt-1">€{totalActual.toLocaleString()}</p>
         </div>
-        <div className="rounded-xl border bg-card p-4 col-span-2 sm:col-span-1">
-          <p className="text-xs text-muted-foreground mb-1">Items</p>
-          <p className="text-xl font-semibold">{state.items.length}</p>
+        <div className="rounded-lg bg-muted/40 p-3">
+          <p className="text-xs text-muted-foreground">Items</p>
+          <p className="text-xl font-semibold mt-1">{items.length}</p>
         </div>
       </div>
 
       {/* line items grouped by category */}
-      {(Object.entries(CATEGORY_LABELS) as [BudgetCategory, string][]).map(
-        ([cat, label]) => {
-          const catItems = state.items.filter(i => i.category === cat)
-          if (catItems.length === 0) return null
+      {items.length === 0 ? (
+        <div className="text-center py-10 border border-dashed rounded-xl text-sm text-muted-foreground">
+          No budget items yet.
+          {isAdmin && (
+            <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
+              {DEFAULT_CATEGORIES.map(c => (
+                <button
+                  key={c}
+                  onClick={() => addItem(c)}
+                  className="text-xs rounded-md border px-3 py-1.5 hover:bg-muted transition-colors"
+                >
+                  + {c}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-5">
+          {categories.map(category => {
+            const catItems = grouped[category]
+            const catTotal = catItems.reduce(
+              (s, i) => s + ((showActual ? i.actual_eur : i.estimate_eur) ?? 0), 0
+            )
+            return (
+              <div key={category} className="space-y-2">
+                <div className="flex items-baseline justify-between">
+                  <h3 className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
+                    {category}
+                  </h3>
+                  <span className="text-xs text-muted-foreground">€{catTotal.toLocaleString()}</span>
+                </div>
 
-          return (
-            <div key={cat}>
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-xs font-semibold uppercase tracking-wider
-                               text-muted-foreground">
-                  {label}
-                </h3>
-                <span className="text-xs text-muted-foreground">
-                  {formatEur(summary.by_category[cat] ?? 0)}
-                </span>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
                 {catItems.map(item => (
-                  <div
+                  <BudgetRow
                     key={item.id}
-                    className="flex items-center gap-3 rounded-lg border bg-card px-3 py-2.5"
+                    item={item}
+                    showActual={showActual}
+                    onUpdate={patch => updateItem(item.id, patch)}
+                    onDelete={() => deleteItem(item.id)}
+                  />
+                ))}
+
+                {isAdmin && (
+                  <button
+                    onClick={() => addItem(category)}
+                    className="text-xs text-muted-foreground hover:text-foreground -mt-1 ml-1"
                   >
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm truncate ${
-                        item.is_actual ? 'text-muted-foreground line-through' : ''
-                      }`}>
-                        {item.label}
-                      </p>
-                    </div>
+                    + Add item
+                  </button>
+                )}
+              </div>
+            )
+          })}
 
-                    <span className="text-sm font-medium shrink-0">
-                      {formatEur(item.amount_eur)}
-                    </span>
-
-                    {isAdmin && (
-                      <div className="flex items-center gap-2 shrink-0">
-                        <button
-                          onClick={() => toggleActual(item)}
-                          disabled={state.saving === item.id}
-                          title={item.is_actual ? 'Mark as estimate' : 'Mark as actual'}
-                          className={`text-xs px-2 py-1 rounded-lg border transition-colors
-                            disabled:opacity-50
-                            ${item.is_actual
-                              ? 'border-green-500/40 text-green-600 dark:text-green-400'
-                              : 'text-muted-foreground hover:border-border'
-                            }`}
-                        >
-                          {item.is_actual ? '✓ actual' : 'estimate'}
-                        </button>
-
-                        <button
-                          onClick={() => deleteItem(item)}
-                          className="text-xs text-muted-foreground hover:text-destructive
-                                     transition-colors"
-                          title="Remove item"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    )}
-                  </div>
+          {isAdmin && (
+            <div className="pt-4 border-t">
+              <p className="text-xs text-muted-foreground mb-2">Add category:</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                {DEFAULT_CATEGORIES.filter(c => !grouped[c]).map(c => (
+                  <button
+                    key={c}
+                    onClick={() => addItem(c)}
+                    className="text-xs rounded-md border px-3 py-1.5 hover:bg-muted transition-colors"
+                  >
+                    + {c}
+                  </button>
                 ))}
               </div>
             </div>
-          )
-        }
+          )}
+        </div>
       )}
 
-      {state.items.length === 0 && (
-        <p className="text-sm text-muted-foreground py-4">No budget items yet.</p>
-      )}
+    </section>
+  )
+}
+
+// Single budget row — label + amount both editable inline
+function BudgetRow({
+  item,
+  showActual,
+  onUpdate,
+  onDelete,
+}: {
+  item: BudgetItem
+  showActual: boolean
+  onUpdate: (patch: Partial<BudgetItem>) => Promise<void>
+  onDelete: () => Promise<void>
+}) {
+  return (
+    <div className="group flex items-center gap-3 rounded-lg border bg-card px-3 py-2">
+      <div className="flex-1 min-w-0">
+        <InlineEdit
+          value={item.label}
+          onSave={v => onUpdate({ label: v })}
+          placeholder="Item name"
+          className="text-sm"
+        />
+      </div>
+      <div className="shrink-0 text-sm tabular-nums">
+        <InlineEdit
+          value={showActual ? (item.actual_eur ?? 0) : (item.estimate_eur ?? 0)}
+          onSave={v => onUpdate(
+            showActual
+              ? { actual_eur: Number(v) || 0 }
+              : { estimate_eur: Number(v) || 0 }
+          )}
+          type="number"
+          placeholder="0"
+          prefix="€"
+          inputClassName="w-24 text-right"
+        />
+      </div>
+      <button
+        onClick={() => { if (confirm('Delete this item?')) onDelete() }}
+        className="text-xs text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+        aria-label="Delete item"
+      >
+        ×
+      </button>
     </div>
   )
 }

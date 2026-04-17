@@ -1,16 +1,13 @@
 export type Hotel = {
-  id: string
-  trip_id: string
-  city: string
-  country_code: string
-  name: string
-  price_min: number | null
-  price_max: number | null
-  rating: number | null
-  notes: string | null
-  book_url: string | null
-  is_selected: boolean
+  id:           string
+  trip_id:      string
+  country_code: string   // 2-letter ISO
+  city:         string
+  name:         string
+  price_range:  string | null   // free-text: '€22–35/night'
+  rating:       string | null   // free-text: '4.6★'
+  notes:        string | null
+  booking_url:  string | null
+  selected:     boolean           // is this the chosen hotel for the city
+  created_at:   string
 }
-
-export type HotelInsert = Omit<Hotel, 'id'>
-export type HotelUpdate = Pick<Hotel, 'id'> & Partial<Omit<Hotel, 'id' | 'trip_id'>>
