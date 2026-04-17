@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { countryFlag, formatCostRange } from '@/lib/formatters'
 import { DayNoteEditor } from './DayNoteEditor'
+import InlineEdit from './InlineEdit'
+import { createClient } from '@/lib/supabaseClient'
 import type { Day } from '@/types'
 
 type Props = {
@@ -15,6 +17,7 @@ type Props = {
 
 export function DayCard({ day, isAdmin, saving, onToggleDone, onSaveNote }: Props) {
   const [open, setOpen] = useState(false)
+  const supabase = createClient()
 
   return (
     <div
@@ -38,7 +41,17 @@ export function DayCard({ day, isAdmin, saving, onToggleDone, onSaveNote }: Prop
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 text-sm font-medium">
             <span>{countryFlag(day.country_code)}</span>
-            <span className="truncate">{day.city}</span>
+            {isAdmin ? (
+              <InlineEdit
+                value={day.city}
+                className="truncate"
+                onSave={async (val) => {
+                  await supabase.from('days').update({ city: val }).eq('id', day.id)
+                }}
+              />
+            ) : (
+              <span className="truncate">{day.city}</span>
+            )}
             {day.is_transfer && (
               <span className="text-xs px-1.5 py-0.5 rounded bg-amber-500/10
                                text-amber-600 dark:text-amber-400 border
@@ -48,7 +61,16 @@ export function DayCard({ day, isAdmin, saving, onToggleDone, onSaveNote }: Prop
             )}
           </div>
           <p className="text-xs text-muted-foreground truncate mt-0.5">
-            {day.stay ?? '—'}
+            {isAdmin ? (
+              <InlineEdit
+                value={day.stay ?? '—'}
+                onSave={async (val) => {
+                  await supabase.from('days').update({ stay: val }).eq('id', day.id)
+                }}
+              />
+            ) : (
+              day.stay ?? '—'
+            )}
           </p>
         </div>
 

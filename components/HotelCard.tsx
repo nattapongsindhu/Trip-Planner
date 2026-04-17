@@ -1,6 +1,8 @@
 'use client'
 
 import { countryFlag } from '@/lib/formatters'
+import InlineEdit from './InlineEdit'
+import { createClient } from '@/lib/supabaseClient'
 import type { Hotel } from '@/types'
 
 type Props = {
@@ -11,6 +13,8 @@ type Props = {
 }
 
 export function HotelCard({ hotel, isAdmin, saving, onToggleSelected }: Props) {
+  const supabase = createClient()
+
   return (
     <div
       className={`rounded-xl border bg-card px-4 py-3 flex items-start gap-3
@@ -26,7 +30,18 @@ export function HotelCard({ hotel, isAdmin, saving, onToggleSelected }: Props) {
 
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
-          <p className="text-sm font-medium leading-snug">{hotel.name}</p>
+          <p className="text-sm font-medium leading-snug">
+            {isAdmin ? (
+              <InlineEdit
+                value={hotel.name}
+                onSave={async (val) => {
+                  await supabase.from('hotels').update({ name: val }).eq('id', hotel.id)
+                }}
+              />
+            ) : (
+              hotel.name
+            )}
+          </p>
           <div className="flex items-center gap-1.5 shrink-0">
             {hotel.rating && (
               <span className="text-xs text-amber-500 font-medium">
@@ -48,16 +63,26 @@ export function HotelCard({ hotel, isAdmin, saving, onToggleSelected }: Props) {
               €{hotel.price_min}–{hotel.price_max}/night
             </span>
           )}
-          {hotel.notes && (
-            <span className="text-xs text-muted-foreground truncate">
-              {hotel.notes}
-            </span>
+          {isAdmin ? (
+            <InlineEdit
+              value={hotel.notes ?? ''}
+              inputClassName="w-48"
+              onSave={async (val) => {
+                await supabase.from('hotels').update({ notes: val }).eq('id', hotel.id)
+              }}
+            />
+          ) : (
+            hotel.notes && (
+              <span className="text-xs text-muted-foreground truncate">
+                {hotel.notes}
+              </span>
+            )
           )}
         </div>
 
         <div className="flex items-center gap-3 mt-2">
           {hotel.book_url && (
-            <a
+            
               href={hotel.book_url}
               target="_blank"
               rel="noopener noreferrer"
@@ -73,11 +98,7 @@ export function HotelCard({ hotel, isAdmin, saving, onToggleSelected }: Props) {
               className="text-xs text-muted-foreground hover:text-foreground
                          transition-colors disabled:opacity-50"
             >
-              {saving
-                ? 'Saving…'
-                : hotel.is_selected
-                  ? 'Deselect'
-                  : 'Select'}
+              {saving ? 'Saving…' : hotel.is_selected ? 'Deselect' : 'Select'}
             </button>
           )}
         </div>
