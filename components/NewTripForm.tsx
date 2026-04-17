@@ -59,7 +59,7 @@ export function NewTripForm() {
         <label className="text-sm font-medium">Title</label>
         <input
           type="text"
-          placeholder="Germany & Eastern Europe 2026"
+          placeholder="Trip title"
           value={form.title}
           onChange={e => set('title', e.target.value)}
           className="rounded-lg border bg-background px-3 py-2 text-sm
@@ -71,7 +71,7 @@ export function NewTripForm() {
         <label className="text-sm font-medium">Destination</label>
         <input
           type="text"
-          placeholder="Munich to Prague to Vienna to Budapest"
+          placeholder="Where are you going?"
           value={form.destination}
           onChange={e => set('destination', e.target.value)}
           className="rounded-lg border bg-background px-3 py-2 text-sm
