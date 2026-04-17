@@ -1,25 +1,11 @@
+// Run: npx ts-node supabase/seed.ts
+// Requires .env.local with SUPABASE_SERVICE_ROLE_KEY before running
+
 import { createClient } from '@supabase/supabase-js'
-import { getServerEnv, hasAdminApiKey } from '../lib/env'
-
-const env = getServerEnv()
-
-if (!hasAdminApiKey(env)) {
-  throw new Error(
-    'SUPABASE_SECRET_KEY is required to run the seed script. SUPABASE_SERVICE_ROLE_KEY remains supported as a temporary fallback.'
-  )
-}
-
-const adminApiKey = env.SUPABASE_SECRET_KEY
-
-if (!adminApiKey) {
-  throw new Error(
-    'SUPABASE_SECRET_KEY is required to run the seed script. SUPABASE_SERVICE_ROLE_KEY remains supported as a temporary fallback.'
-  )
-}
 
 const supabase = createClient(
-  env.NEXT_PUBLIC_SUPABASE_URL,
-  adminApiKey
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY! // service role key bypasses RLS
 )
 
 async function seed() {

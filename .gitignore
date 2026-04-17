@@ -7,7 +7,6 @@ node_modules/
 .next/
 out/
 dist/
-coverage/
 
 # environment variables — never commit these
 .env

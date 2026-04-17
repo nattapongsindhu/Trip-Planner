@@ -1,12 +1,10 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabaseServer'
-import { getOptionalUser } from '@/lib/supabaseAuth'
-import { createPublicServerClient } from '@/lib/supabasePublicServer'
 import type { TripInsert } from '@/types'
 
 // GET /api/trips — public, returns all trips ordered by newest first
 export async function GET() {
-  const supabase = createPublicServerClient()
+  const supabase = createClient()
 
   const { data, error } = await supabase
     .from('trips')
@@ -24,7 +22,7 @@ export async function GET() {
 export async function POST(request: Request) {
   const supabase = createClient()
 
-  const user = await getOptionalUser(supabase)
+  const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }

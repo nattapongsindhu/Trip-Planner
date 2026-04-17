@@ -3,7 +3,6 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabaseServer'
 import { TripEditForm } from '@/components/TripEditForm'
-import { getOptionalUser } from '@/lib/supabaseAuth'
 import type { Trip } from '@/types'
 
 type Props = { params: { id: string } }
@@ -11,8 +10,8 @@ type Props = { params: { id: string } }
 export default async function EditTripPage({ params }: Props) {
   const supabase = createClient()
 
-  const [user, { data: trip, error }] = await Promise.all([
-    getOptionalUser(supabase),
+  const [{ data: { user } }, { data: trip, error }] = await Promise.all([
+    supabase.auth.getUser(),
     supabase.from('trips').select('*').eq('id', params.id).single(),
   ])
 

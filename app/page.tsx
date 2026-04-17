@@ -5,23 +5,25 @@ import { formatDate, formatEur, tripDuration } from '@/lib/formatters'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { AuthButton } from '@/components/AuthButton'
 import { NewTripButton } from '@/components/NewTripButton'
-import { getOptionalUserFromClientFactory } from '@/lib/supabaseAuth'
-import { createPublicServerClient } from '@/lib/supabasePublicServer'
 import type { Trip } from '@/types'
 
 // always fetch fresh data — no ISR caching on the trips list
 export const revalidate = 0
 
 export default async function HomePage() {
-  const supabase = createPublicServerClient()
+  const supabase = createClient()
 
-  const [{ data: trips, error: tripsError }, user] = await Promise.all([
+  const [{ data: trips, error }, { data: { user } }] = await Promise.all([
     supabase.from('trips').select('*').order('created_at', { ascending: false }),
-    getOptionalUserFromClientFactory(createClient),
+    supabase.auth.getUser(),
   ])
 
-  if (tripsError) {
-    throw new Error(`Failed to load trips: ${tripsError.message}`)
+  if (error) {
+    return (
+      <main className="max-w-4xl mx-auto px-4 py-12">
+        <p className="text-destructive text-sm">Failed to load trips: {error.message}</p>
+      </main>
+    )
   }
 
   const isAdmin = !!user
