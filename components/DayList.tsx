@@ -72,6 +72,8 @@ export function DayList({ days: initialDays, tripId, isAdmin }: Props) {
     if (res.ok) {
       const data: Day = await res.json()
       dispatch({ type: 'UPDATE_DAY', payload: data })
+    } else {
+      console.error('Failed to save note:', res.status, res.statusText)
     }
 
     dispatch({ type: 'SET_SAVING', id: null })

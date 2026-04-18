@@ -115,7 +115,8 @@ export function BudgetTracker({ items: initialItems, tripId, isAdmin }: Props) {
                         value={item.label}
                         className={`text-sm ${item.is_actual ? 'text-muted-foreground line-through' : ''}`}
                         onSave={async (val) => {
-                          await supabase.from('budget_items').update({ label: val }).eq('id', item.id)
+                          const { error } = await supabase.from('budget_items').update({ label: val }).eq('id', item.id)
+                          if (error) { console.error('Failed to update label:', error.message); return }
                           dispatch({ type: 'UPDATE_ITEM', payload: { ...item, label: val } })
                         }}
                       />
@@ -134,7 +135,8 @@ export function BudgetTracker({ items: initialItems, tripId, isAdmin }: Props) {
                         onSave={async (val) => {
                           const num = parseFloat(val)
                           if (isNaN(num)) return
-                          await supabase.from('budget_items').update({ amount_eur: num }).eq('id', item.id)
+                          const { error } = await supabase.from('budget_items').update({ amount_eur: num }).eq('id', item.id)
+                          if (error) { console.error('Failed to update amount:', error.message); return }
                           dispatch({ type: 'UPDATE_ITEM', payload: { ...item, amount_eur: num } })
                         }}
                       />

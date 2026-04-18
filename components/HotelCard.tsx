@@ -35,7 +35,8 @@ export function HotelCard({ hotel, isAdmin, saving, onToggleSelected }: Props) {
               <InlineEdit
                 value={hotel.name}
                 onSave={async (val) => {
-                  await supabase.from('hotels').update({ name: val }).eq('id', hotel.id)
+                  const { error } = await supabase.from('hotels').update({ name: val }).eq('id', hotel.id)
+                  if (error) console.error('Failed to update hotel name:', error.message)
                 }}
               />
             ) : (
@@ -68,7 +69,8 @@ export function HotelCard({ hotel, isAdmin, saving, onToggleSelected }: Props) {
               value={hotel.notes ?? ''}
               inputClassName="w-48"
               onSave={async (val) => {
-                await supabase.from('hotels').update({ notes: val }).eq('id', hotel.id)
+                const { error } = await supabase.from('hotels').update({ notes: val }).eq('id', hotel.id)
+                if (error) console.error('Failed to update hotel notes:', error.message)
               }}
             />
           ) : (

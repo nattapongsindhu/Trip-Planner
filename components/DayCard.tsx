@@ -46,7 +46,8 @@ export function DayCard({ day, isAdmin, saving, onToggleDone, onSaveNote }: Prop
                 value={day.city}
                 className="truncate"
                 onSave={async (val) => {
-                  await supabase.from('days').update({ city: val }).eq('id', day.id)
+                  const { error } = await supabase.from('days').update({ city: val }).eq('id', day.id)
+                  if (error) console.error('Failed to update city:', error.message)
                 }}
               />
             ) : (
@@ -65,7 +66,8 @@ export function DayCard({ day, isAdmin, saving, onToggleDone, onSaveNote }: Prop
               <InlineEdit
                 value={day.stay ?? '—'}
                 onSave={async (val) => {
-                  await supabase.from('days').update({ stay: val }).eq('id', day.id)
+                  const { error } = await supabase.from('days').update({ stay: val }).eq('id', day.id)
+                  if (error) console.error('Failed to update stay:', error.message)
                 }}
               />
             ) : (
