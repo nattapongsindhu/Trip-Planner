@@ -60,7 +60,7 @@ export function HotelCard({ hotel, isAdmin, saving, onToggleSelected }: Props) {
         <div className="flex items-center gap-3 mt-1">
           {hotel.price_min != null && hotel.price_max != null && (
             <span className="text-xs text-muted-foreground">
-              €{hotel.price_min}–{hotel.price_max}/night
+              ${hotel.price_min}–{hotel.price_max}/night
             </span>
           )}
           {isAdmin ? (
