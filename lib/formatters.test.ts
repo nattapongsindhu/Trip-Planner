@@ -10,19 +10,19 @@ import {
 
 describe('formatEur', () => {
   it('formats a whole number correctly', () => {
-    expect(formatEur(1235)).toBe('$1,235')
+    expect(formatEur(1235)).toBe('€1,235')
   })
   it('formats zero', () => {
-    expect(formatEur(0)).toBe('$0')
+    expect(formatEur(0)).toBe('€0')
   })
 })
 
 describe('formatCostRange', () => {
   it('shows a range when min and max differ', () => {
-    expect(formatCostRange(65, 95)).toBe('$65–$95')
+    expect(formatCostRange(65, 95)).toBe('€65–€95')
   })
   it('shows a single value when min equals max', () => {
-    expect(formatCostRange(80, 80)).toBe('$80')
+    expect(formatCostRange(80, 80)).toBe('€80')
   })
 })
 

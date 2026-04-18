@@ -3,7 +3,6 @@
 import { useReducer, useCallback } from 'react'
 import { formatEur, calcBudgetSummary } from '@/lib/formatters'
 import InlineEdit from './InlineEdit'
-import { createClient } from '@/lib/supabaseClient'
 import type { BudgetItem, BudgetCategory } from '@/types'
 
 type State = {
@@ -48,7 +47,6 @@ type Props = {
 
 export function BudgetTracker({ items: initialItems, tripId, isAdmin }: Props) {
   const [state, dispatch] = useReducer(reducer, { items: initialItems, saving: null })
-  const supabase = createClient()
   const summary = calcBudgetSummary(state.items)
 
   const toggleActual = useCallback(async (item: BudgetItem) => {
@@ -121,8 +119,12 @@ export function BudgetTracker({ items: initialItems, tripId, isAdmin }: Props) {
                         value={item.label}
                         className={`text-sm ${item.is_actual ? 'text-muted-foreground line-through' : ''}`}
                         onSave={async (val) => {
-                          const { error } = await supabase.from('budget_items').update({ label: val }).eq('id', item.id)
-                          if (error) { console.error('Failed to update label:', error.message); return }
+                          const res = await fetch(`/api/trips/${tripId}/budget`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ id: item.id, label: val }),
+                          })
+                          if (!res.ok) { console.error('Failed to update label:', res.status, res.statusText); return }
                           dispatch({ type: 'UPDATE_ITEM', payload: { ...item, label: val } })
                         }}
                       />
@@ -141,8 +143,12 @@ export function BudgetTracker({ items: initialItems, tripId, isAdmin }: Props) {
                         onSave={async (val) => {
                           const num = parseFloat(val)
                           if (isNaN(num) || !isFinite(num) || num < 0) return
-                          const { error } = await supabase.from('budget_items').update({ amount_eur: num }).eq('id', item.id)
-                          if (error) { console.error('Failed to update amount:', error.message); return }
+                          const res = await fetch(`/api/trips/${tripId}/budget`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ id: item.id, amount_eur: num }),
+                          })
+                          if (!res.ok) { console.error('Failed to update amount:', res.status, res.statusText); return }
                           dispatch({ type: 'UPDATE_ITEM', payload: { ...item, amount_eur: num } })
                         }}
                       />

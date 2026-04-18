@@ -19,9 +19,9 @@ export default async function TripPage({ params }: Props) {
   // fetch all related data in parallel to minimise load time
   const [
     { data: trip, error: tripError },
-    { data: days },
-    { data: hotels },
-    { data: budgetItems },
+    { data: days, error: daysError },
+    { data: hotels, error: hotelsError },
+    { data: budgetItems, error: budgetError },
     { data: { user } },
   ] = await Promise.all([
     supabase.from('trips').select('*').eq('id', params.id).single(),
@@ -32,6 +32,11 @@ export default async function TripPage({ params }: Props) {
   ])
 
   if (tripError || !trip) notFound()
+  if (daysError || hotelsError || budgetError) {
+    throw new Error(
+      daysError?.message ?? hotelsError?.message ?? budgetError?.message ?? 'Failed to load trip data'
+    )
+  }
 
   const isAdmin      = !!user
   const typedTrip    = trip as Trip
