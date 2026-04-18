@@ -5,7 +5,7 @@
 export function formatEur(amount: number): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'EUR',
+    currency: 'USD',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount)
@@ -15,7 +15,7 @@ export function formatEur(amount: number): string {
 // formatCostRange(65, 95) → "€65–95"
 export function formatCostRange(min: number, max: number): string {
   if (min === max) return formatEur(min)
-  return `€${min}–${max}`
+  return formatEur(min)+"-"+formatEur(max)
 }
 
 // Formats an ISO date string into a human-readable label
