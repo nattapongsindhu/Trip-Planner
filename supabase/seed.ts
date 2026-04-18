@@ -21,6 +21,7 @@ async function seed() {
       end_date: '2026-09-15',
       budget_eur: 1235,
       is_template: false,
+      is_public: false,
     })
     .select('id')
     .single()

@@ -140,7 +140,7 @@ export function BudgetTracker({ items: initialItems, tripId, isAdmin }: Props) {
                         inputClassName="w-20 text-right"
                         onSave={async (val) => {
                           const num = parseFloat(val)
-                          if (isNaN(num)) return
+                          if (isNaN(num) || !isFinite(num) || num < 0) return
                           const { error } = await supabase.from('budget_items').update({ amount_eur: num }).eq('id', item.id)
                           if (error) { console.error('Failed to update amount:', error.message); return }
                           dispatch({ type: 'UPDATE_ITEM', payload: { ...item, amount_eur: num } })

@@ -27,7 +27,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const body: TripInsert = await request.json()
+  let body: TripInsert
+  try { body = await request.json() } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
 
   // basic validation — no Zod, plain TypeScript guard
   if (!body.title?.trim() || !body.destination?.trim()) {

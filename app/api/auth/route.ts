@@ -5,7 +5,10 @@ import { createClient } from '@/lib/supabaseServer'
 // body: { email: string }
 export async function POST(request: Request) {
   const supabase = createClient()
-  const { email }: { email: string } = await request.json()
+  let email: string
+  try { ({ email } = await request.json()) } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
 
   if (!email?.includes('@')) {
     return NextResponse.json({ error: 'Valid email required' }, { status: 400 })

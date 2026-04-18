@@ -30,9 +30,11 @@ export default function InlineEdit({
     setSaving(true);
     try {
       await onSave(text.trim());
+      setEditing(false);
+    } catch (err) {
+      console.error('InlineEdit save failed:', err);
     } finally {
       setSaving(false);
-      setEditing(false);
     }
   };
 
