@@ -31,7 +31,10 @@ export async function POST(request: Request, { params }: Params) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const body: Omit<HotelInsert, 'trip_id'> = await request.json()
+  let body: Omit<HotelInsert, 'trip_id'>
+  try { body = await request.json() } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
 
   if (!body.name?.trim() || !body.city?.trim()) {
     return NextResponse.json(
@@ -63,7 +66,10 @@ export async function PUT(request: Request, { params }: Params) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const body: HotelUpdate = await request.json()
+  let body: HotelUpdate
+  try { body = await request.json() } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
 
   if (!body.id) {
     return NextResponse.json({ error: 'hotel id is required' }, { status: 400 })

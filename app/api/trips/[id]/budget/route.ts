@@ -30,7 +30,10 @@ export async function POST(request: Request, { params }: Params) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const body: Omit<BudgetInsert, 'trip_id'> = await request.json()
+  let body: Omit<BudgetInsert, 'trip_id'>
+  try { body = await request.json() } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
 
   if (!body.label?.trim() || !body.category) {
     return NextResponse.json(
@@ -62,8 +65,10 @@ export async function PUT(request: Request, { params }: Params) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const body: { id: string; amount_eur?: number; is_actual?: boolean; label?: string } =
-    await request.json()
+  let body: { id: string; amount_eur?: number; is_actual?: boolean; label?: string }
+  try { body = await request.json() } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
 
   if (!body.id) {
     return NextResponse.json({ error: 'budget item id is required' }, { status: 400 })

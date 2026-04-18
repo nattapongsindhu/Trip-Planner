@@ -53,8 +53,10 @@ export function DayList({ days: initialDays, tripId, isAdmin }: Props) {
       body: JSON.stringify({ id: day.id, is_done: updated.is_done }),
     })
 
-    // revert to original state if the request failed
-    if (!res.ok) dispatch({ type: 'UPDATE_DAY', payload: day })
+    if (!res.ok) {
+      console.error('Failed to toggle day done:', res.status, res.statusText)
+      dispatch({ type: 'UPDATE_DAY', payload: day })
+    }
 
     dispatch({ type: 'SET_SAVING', id: null })
   }, [tripId])

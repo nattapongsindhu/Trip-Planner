@@ -32,7 +32,10 @@ export async function PUT(request: Request, { params }: Params) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const body: TripUpdate = await request.json()
+  let body: TripUpdate
+  try { body = await request.json() } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
 
   const { data, error } = await supabase
     .from('trips')

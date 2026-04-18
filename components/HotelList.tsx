@@ -53,7 +53,10 @@ export function HotelList({ hotels: initialHotels, tripId, isAdmin }: Props) {
       body: JSON.stringify({ id: hotel.id, is_selected: updated.is_selected }),
     })
 
-    if (!res.ok) dispatch({ type: 'UPDATE_HOTEL', payload: hotel })
+    if (!res.ok) {
+      console.error('Failed to toggle hotel selection:', res.status, res.statusText)
+      dispatch({ type: 'UPDATE_HOTEL', payload: hotel })
+    }
 
     dispatch({ type: 'SET_SAVING', id: null })
   }, [tripId])

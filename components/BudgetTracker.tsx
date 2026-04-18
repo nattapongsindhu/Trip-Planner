@@ -60,14 +60,20 @@ export function BudgetTracker({ items: initialItems, tripId, isAdmin }: Props) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: item.id, is_actual: updated.is_actual }),
     })
-    if (!res.ok) dispatch({ type: 'UPDATE_ITEM', payload: item })
+    if (!res.ok) {
+      console.error('Failed to toggle actual status:', res.status, res.statusText)
+      dispatch({ type: 'UPDATE_ITEM', payload: item })
+    }
     dispatch({ type: 'SET_SAVING', id: null })
   }, [tripId])
 
   const deleteItem = useCallback(async (item: BudgetItem) => {
     dispatch({ type: 'DELETE_ITEM', id: item.id })
     const res = await fetch(`/api/trips/${tripId}/budget?itemId=${item.id}`, { method: 'DELETE' })
-    if (!res.ok) dispatch({ type: 'ADD_ITEM', payload: item })
+    if (!res.ok) {
+      console.error('Failed to delete budget item:', res.status, res.statusText)
+      dispatch({ type: 'ADD_ITEM', payload: item })
+    }
   }, [tripId])
 
   return (

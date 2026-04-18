@@ -31,7 +31,10 @@ export async function PUT(request: Request, { params }: Params) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const body: DayUpdate = await request.json()
+  let body: DayUpdate
+  try { body = await request.json() } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
 
   if (!body.id) {
     return NextResponse.json({ error: 'day id is required' }, { status: 400 })
