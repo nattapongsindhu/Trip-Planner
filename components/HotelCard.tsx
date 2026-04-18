@@ -82,7 +82,7 @@ export function HotelCard({ hotel, isAdmin, saving, onToggleSelected }: Props) {
 
         <div className="flex items-center gap-3 mt-2">
           {hotel.book_url && (
-            
+            <a
               href={hotel.book_url}
               target="_blank"
               rel="noopener noreferrer"
