@@ -2,7 +2,6 @@
 
 import { countryFlag } from '@/lib/formatters'
 import InlineEdit from './InlineEdit'
-import { createClient } from '@/lib/supabaseClient'
 import type { Hotel } from '@/types'
 
 type Props = {
@@ -10,11 +9,10 @@ type Props = {
   isAdmin: boolean
   saving: boolean
   onToggleSelected: (hotel: Hotel) => void
+  onDelete: (hotel: Hotel) => void
 }
 
-export function HotelCard({ hotel, isAdmin, saving, onToggleSelected }: Props) {
-  const supabase = createClient()
-
+export function HotelCard({ hotel, isAdmin, saving, onToggleSelected, onDelete }: Props) {
   return (
     <div
       className={`rounded-xl border bg-card px-4 py-3 flex items-start gap-3
@@ -35,8 +33,12 @@ export function HotelCard({ hotel, isAdmin, saving, onToggleSelected }: Props) {
               <InlineEdit
                 value={hotel.name}
                 onSave={async (val) => {
-                  const { error } = await supabase.from('hotels').update({ name: val }).eq('id', hotel.id)
-                  if (error) console.error('Failed to update hotel name:', error.message)
+                  const res = await fetch(`/api/trips/${hotel.trip_id}/hotels`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: hotel.id, name: val }),
+                  })
+                  if (!res.ok) console.error('Failed to update hotel name:', res.status, res.statusText)
                 }}
               />
             ) : (
@@ -69,8 +71,12 @@ export function HotelCard({ hotel, isAdmin, saving, onToggleSelected }: Props) {
               value={hotel.notes ?? ''}
               inputClassName="w-48"
               onSave={async (val) => {
-                const { error } = await supabase.from('hotels').update({ notes: val }).eq('id', hotel.id)
-                if (error) console.error('Failed to update hotel notes:', error.message)
+                const res = await fetch(`/api/trips/${hotel.trip_id}/hotels`, {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ id: hotel.id, notes: val }),
+                })
+                if (!res.ok) console.error('Failed to update hotel notes:', res.status, res.statusText)
               }}
             />
           ) : (
@@ -94,14 +100,22 @@ export function HotelCard({ hotel, isAdmin, saving, onToggleSelected }: Props) {
             </a>
           )}
           {isAdmin && (
-            <button
-              onClick={() => onToggleSelected(hotel)}
-              disabled={saving}
-              className="text-xs text-muted-foreground hover:text-foreground
-                         transition-colors disabled:opacity-50"
-            >
-              {saving ? 'Saving…' : hotel.is_selected ? 'Deselect' : 'Select'}
-            </button>
+            <>
+              <button
+                onClick={() => onToggleSelected(hotel)}
+                disabled={saving}
+                className="text-xs text-muted-foreground hover:text-foreground
+                           transition-colors disabled:opacity-50"
+              >
+                {saving ? 'Saving…' : hotel.is_selected ? 'Deselect' : 'Select'}
+              </button>
+              <button
+                onClick={() => onDelete(hotel)}
+                className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+              >
+                Delete
+              </button>
+            </>
           )}
         </div>
       </div>

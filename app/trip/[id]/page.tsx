@@ -2,12 +2,14 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabaseServer'
-import { formatDate, formatEur, tripDuration, calcProgress } from '@/lib/formatters'
+import { formatDate, formatUsd, tripDuration, calcProgress } from '@/lib/formatters'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { DayList } from '@/components/DayList'
 import { HotelList } from '@/components/HotelList'
 import { BudgetTracker } from '@/components/BudgetTracker'
-import type { Trip, Day, Hotel, BudgetItem } from '@/types'
+import { TripNoteEditor } from '@/components/TripNoteEditor'
+import { TransportationList } from '@/components/TransportationList'
+import type { Trip, Day, Hotel, BudgetItem, Transportation } from '@/types'
 
 type Props = { params: { id: string } }
 
@@ -19,25 +21,33 @@ export default async function TripPage({ params }: Props) {
   // fetch all related data in parallel to minimise load time
   const [
     { data: trip, error: tripError },
-    { data: days },
-    { data: hotels },
-    { data: budgetItems },
+    { data: days, error: daysError },
+    { data: hotels, error: hotelsError },
+    { data: budgetItems, error: budgetError },
+    { data: transportation, error: transportError },
     { data: { user } },
   ] = await Promise.all([
     supabase.from('trips').select('*').eq('id', params.id).single(),
     supabase.from('days').select('*').eq('trip_id', params.id).order('day_number'),
     supabase.from('hotels').select('*').eq('trip_id', params.id).order('city'),
     supabase.from('budget_items').select('*').eq('trip_id', params.id),
+    supabase.from('trip_transportation').select('*').eq('trip_id', params.id).order('date', { ascending: true, nullsFirst: false }),
     supabase.auth.getUser(),
   ])
 
   if (tripError || !trip) notFound()
+  if (daysError || hotelsError || budgetError || transportError) {
+    throw new Error(
+      daysError?.message ?? hotelsError?.message ?? budgetError?.message ?? transportError?.message ?? 'Failed to load trip data'
+    )
+  }
 
-  const isAdmin      = !!user
-  const typedTrip    = trip as Trip
-  const typedDays    = (days ?? []) as Day[]
-  const typedHotels  = (hotels ?? []) as Hotel[]
-  const typedBudget  = (budgetItems ?? []) as BudgetItem[]
+  const isAdmin             = !!user
+  const typedTrip           = trip as Trip
+  const typedDays           = (days ?? []) as Day[]
+  const typedHotels         = (hotels ?? []) as Hotel[]
+  const typedBudget         = (budgetItems ?? []) as BudgetItem[]
+  const typedTransportation = (transportation ?? []) as Transportation[]
   const progress     = calcProgress(typedDays)
   const duration     = tripDuration(typedTrip.start_date, typedTrip.end_date)
 
@@ -85,7 +95,7 @@ export default async function TripPage({ params }: Props) {
           </div>
           <div>
             <p className="text-xs text-muted-foreground mb-0.5">Budget</p>
-            <p className="text-sm font-medium">{formatEur(typedTrip.budget_eur)}</p>
+            <p className="text-sm font-medium">{formatUsd(typedTrip.budget_usd)}</p>
           </div>
         </div>
 
@@ -119,10 +129,16 @@ export default async function TripPage({ params }: Props) {
         <DayList days={typedDays} tripId={params.id} isAdmin={isAdmin} />
       </section>
 
-      {/* accommodation section */}
+      {/* transportation section */}
+      <section className="mb-8">
+        <h2 className="text-base font-semibold mb-3">Transportation</h2>
+        <TransportationList items={typedTransportation} tripId={params.id} isAdmin={isAdmin} />
+      </section>
+
+      {/* hotel section */}
       <section className="mb-8">
         <h2 className="text-base font-semibold mb-3">
-          Accommodation
+          Hotel
           <span className="ml-2 text-xs font-normal text-muted-foreground">
             {typedHotels.filter(h => h.is_selected).length} selected
           </span>
@@ -134,6 +150,12 @@ export default async function TripPage({ params }: Props) {
       <section className="mb-8">
         <h2 className="text-base font-semibold mb-3">Budget</h2>
         <BudgetTracker items={typedBudget} tripId={params.id} isAdmin={isAdmin} />
+      </section>
+
+      {/* notes section */}
+      <section className="mb-8">
+        <h2 className="text-base font-semibold mb-3">Notes</h2>
+        <TripNoteEditor tripId={params.id} initialNote={typedTrip.note} isAdmin={isAdmin} />
       </section>
 
     </main>

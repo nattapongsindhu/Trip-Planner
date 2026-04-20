@@ -13,7 +13,7 @@ export function TripEditForm({ trip }: Props) {
     destination: trip.destination,
     start_date:  trip.start_date,
     end_date:    trip.end_date,
-    budget_eur:  trip.budget_eur,
+    budget_usd:  trip.budget_usd,
     is_template: trip.is_template,
   })
   const [loading, setLoading]   = useState(false)
@@ -100,7 +100,13 @@ export function TripEditForm({ trip }: Props) {
             <input
               type="date"
               value={form.start_date ?? ''}
-              onChange={e => set('start_date', e.target.value || null)}
+              onChange={e => {
+                const newStart = e.target.value || null
+                setForm(prev => {
+                  const endInvalid = newStart && prev.end_date && prev.end_date <= newStart
+                  return { ...prev, start_date: newStart, end_date: endInvalid ? null : prev.end_date }
+                })
+              }}
               className="rounded-lg border bg-background px-3 py-2 text-sm
                          focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
@@ -110,6 +116,9 @@ export function TripEditForm({ trip }: Props) {
             <input
               type="date"
               value={form.end_date ?? ''}
+              min={form.start_date
+                ? new Date(new Date(form.start_date).getTime() + 86400000).toISOString().slice(0, 10)
+                : undefined}
               onChange={e => set('end_date', e.target.value || null)}
               className="rounded-lg border bg-background px-3 py-2 text-sm
                          focus:outline-none focus:ring-2 focus:ring-primary/30"
@@ -118,13 +127,13 @@ export function TripEditForm({ trip }: Props) {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">Budget (EUR)</label>
+          <label className="text-sm font-medium">Budget (USD)</label>
           <input
             type="number"
             min={0}
             step={10}
-            value={form.budget_eur ?? 0}
-            onChange={e => set('budget_eur', Number(e.target.value))}
+            value={form.budget_usd ?? 0}
+            onChange={e => set('budget_usd', Number(e.target.value))}
             className="rounded-lg border bg-background px-3 py-2 text-sm
                        focus:outline-none focus:ring-2 focus:ring-primary/30"
           />

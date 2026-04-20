@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { countryFlag, formatCostRange } from '@/lib/formatters'
 import { DayNoteEditor } from './DayNoteEditor'
 import InlineEdit from './InlineEdit'
-import { createClient } from '@/lib/supabaseClient'
 import type { Day } from '@/types'
 
 type Props = {
@@ -13,11 +12,11 @@ type Props = {
   saving: boolean
   onToggleDone: (day: Day) => void
   onSaveNote: (day: Day, note: string) => void
+  onDelete: (day: Day) => void
 }
 
-export function DayCard({ day, isAdmin, saving, onToggleDone, onSaveNote }: Props) {
+export function DayCard({ day, isAdmin, saving, onToggleDone, onSaveNote, onDelete }: Props) {
   const [open, setOpen] = useState(false)
-  const supabase = createClient()
 
   return (
     <div
@@ -46,8 +45,12 @@ export function DayCard({ day, isAdmin, saving, onToggleDone, onSaveNote }: Prop
                 value={day.city}
                 className="truncate"
                 onSave={async (val) => {
-                  const { error } = await supabase.from('days').update({ city: val }).eq('id', day.id)
-                  if (error) console.error('Failed to update city:', error.message)
+                  const res = await fetch(`/api/trips/${day.trip_id}/days`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: day.id, city: val }),
+                  })
+                  if (!res.ok) console.error('Failed to update city:', res.status, res.statusText)
                 }}
               />
             ) : (
@@ -66,8 +69,12 @@ export function DayCard({ day, isAdmin, saving, onToggleDone, onSaveNote }: Prop
               <InlineEdit
                 value={day.stay ?? '—'}
                 onSave={async (val) => {
-                  const { error } = await supabase.from('days').update({ stay: val }).eq('id', day.id)
-                  if (error) console.error('Failed to update stay:', error.message)
+                  const res = await fetch(`/api/trips/${day.trip_id}/days`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: day.id, stay: val }),
+                  })
+                  if (!res.ok) console.error('Failed to update stay:', res.status, res.statusText)
                 }}
               />
             ) : (
@@ -119,18 +126,26 @@ export function DayCard({ day, isAdmin, saving, onToggleDone, onSaveNote }: Prop
           />
 
           {isAdmin && (
-            <button
-              onClick={() => onToggleDone(day)}
-              disabled={saving}
-              className={`self-start text-xs px-3 py-1.5 rounded-lg border
-                transition-colors disabled:opacity-50
-                ${day.is_done
-                  ? 'border-green-500/50 text-green-600 dark:text-green-400 bg-green-500/10'
-                  : 'hover:border-green-500/50 hover:text-green-600 dark:hover:text-green-400'
-                }`}
-            >
-              {saving ? 'Saving…' : day.is_done ? '✓ Done' : 'Mark as done'}
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => onToggleDone(day)}
+                disabled={saving}
+                className={`text-xs px-3 py-1.5 rounded-lg border
+                  transition-colors disabled:opacity-50
+                  ${day.is_done
+                    ? 'border-green-500/50 text-green-600 dark:text-green-400 bg-green-500/10'
+                    : 'hover:border-green-500/50 hover:text-green-600 dark:hover:text-green-400'
+                  }`}
+              >
+                {saving ? 'Saving…' : day.is_done ? '✓ Done' : 'Mark as done'}
+              </button>
+              <button
+                onClick={() => onDelete(day)}
+                className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+              >
+                Delete day
+              </button>
+            </div>
           )}
 
         </div>

@@ -9,9 +9,10 @@ const EMPTY: TripInsert = {
   destination: '',
   start_date: null,
   end_date: null,
-  budget_eur: 0,
+  budget_usd: 0,
   is_template: false,
   is_public: false,
+  note: null,
 }
 
 export function NewTripForm() {
@@ -103,13 +104,13 @@ export function NewTripForm() {
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium">Budget (EUR)</label>
+        <label className="text-sm font-medium">Budget (USD)</label>
         <input
           type="number"
           min={0}
           step={10}
-          value={form.budget_eur}
-          onChange={e => set('budget_eur', Number(e.target.value))}
+          value={form.budget_usd}
+          onChange={e => set('budget_usd', Number(e.target.value))}
           className="rounded-lg border bg-background px-3 py-2 text-sm
                      focus:outline-none focus:ring-2 focus:ring-primary/30"
         />

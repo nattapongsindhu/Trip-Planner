@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  formatEur,
+  formatUsd,
   formatCostRange,
   tripDuration,
   countryFlag,
@@ -8,12 +8,12 @@ import {
   calcProgress,
 } from './formatters'
 
-describe('formatEur', () => {
+describe('formatUsd', () => {
   it('formats a whole number correctly', () => {
-    expect(formatEur(1235)).toBe('$1,235')
+    expect(formatUsd(1235)).toBe('$1,235')
   })
   it('formats zero', () => {
-    expect(formatEur(0)).toBe('$0')
+    expect(formatUsd(0)).toBe('$0')
   })
 })
 

@@ -1,9 +1,8 @@
 'use client'
 
-import { useReducer, useCallback } from 'react'
-import { formatEur, calcBudgetSummary } from '@/lib/formatters'
+import { useReducer, useCallback, useState } from 'react'
+import { formatUsd, calcBudgetSummary } from '@/lib/formatters'
 import InlineEdit from './InlineEdit'
-import { createClient } from '@/lib/supabaseClient'
 import type { BudgetItem, BudgetCategory } from '@/types'
 
 type State = {
@@ -33,7 +32,7 @@ function reducer(state: State, action: Action): State {
 }
 
 const CATEGORY_LABELS: Record<BudgetCategory, string> = {
-  accommodation: 'Accommodation',
+  accommodation: 'Hotel',
   transport:     'Transport',
   food:          'Food & drinks',
   activities:    'Activities',
@@ -48,7 +47,6 @@ type Props = {
 
 export function BudgetTracker({ items: initialItems, tripId, isAdmin }: Props) {
   const [state, dispatch] = useReducer(reducer, { items: initialItems, saving: null })
-  const supabase = createClient()
   const summary = calcBudgetSummary(state.items)
 
   const toggleActual = useCallback(async (item: BudgetItem) => {
@@ -82,11 +80,11 @@ export function BudgetTracker({ items: initialItems, tripId, isAdmin }: Props) {
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <div className="rounded-xl border bg-card p-4">
           <p className="text-xs text-muted-foreground mb-1">Total estimated</p>
-          <p className="text-xl font-semibold">{formatEur(summary.total_estimated)}</p>
+          <p className="text-xl font-semibold">{formatUsd(summary.total_estimated)}</p>
         </div>
         <div className="rounded-xl border bg-card p-4">
           <p className="text-xs text-muted-foreground mb-1">Total actual</p>
-          <p className="text-xl font-semibold">{formatEur(summary.total_actual)}</p>
+          <p className="text-xl font-semibold">{formatUsd(summary.total_actual)}</p>
         </div>
         <div className="rounded-xl border bg-card p-4 col-span-2 sm:col-span-1">
           <p className="text-xs text-muted-foreground mb-1">Items</p>
@@ -105,7 +103,7 @@ export function BudgetTracker({ items: initialItems, tripId, isAdmin }: Props) {
                 {label}
               </h3>
               <span className="text-xs text-muted-foreground">
-                {formatEur(summary.by_category[cat] ?? 0)}
+                {formatUsd(summary.by_category[cat] ?? 0)}
               </span>
             </div>
 
@@ -121,8 +119,12 @@ export function BudgetTracker({ items: initialItems, tripId, isAdmin }: Props) {
                         value={item.label}
                         className={`text-sm ${item.is_actual ? 'text-muted-foreground line-through' : ''}`}
                         onSave={async (val) => {
-                          const { error } = await supabase.from('budget_items').update({ label: val }).eq('id', item.id)
-                          if (error) { console.error('Failed to update label:', error.message); return }
+                          const res = await fetch(`/api/trips/${tripId}/budget`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ id: item.id, label: val }),
+                          })
+                          if (!res.ok) { console.error('Failed to update label:', res.status, res.statusText); return }
                           dispatch({ type: 'UPDATE_ITEM', payload: { ...item, label: val } })
                         }}
                       />
@@ -141,13 +143,17 @@ export function BudgetTracker({ items: initialItems, tripId, isAdmin }: Props) {
                         onSave={async (val) => {
                           const num = parseFloat(val)
                           if (isNaN(num) || !isFinite(num) || num < 0) return
-                          const { error } = await supabase.from('budget_items').update({ amount_eur: num }).eq('id', item.id)
-                          if (error) { console.error('Failed to update amount:', error.message); return }
+                          const res = await fetch(`/api/trips/${tripId}/budget`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ id: item.id, amount_eur: num }),
+                          })
+                          if (!res.ok) { console.error('Failed to update amount:', res.status, res.statusText); return }
                           dispatch({ type: 'UPDATE_ITEM', payload: { ...item, amount_eur: num } })
                         }}
                       />
                     ) : (
-                      formatEur(item.amount_eur)
+                      formatUsd(item.amount_eur)
                     )}
                   </span>
 
@@ -183,6 +189,71 @@ export function BudgetTracker({ items: initialItems, tripId, isAdmin }: Props) {
       {state.items.length === 0 && (
         <p className="text-sm text-muted-foreground py-4">No budget items yet.</p>
       )}
+
+      {isAdmin && <AddItemForm tripId={tripId} onAdd={item => dispatch({ type: 'ADD_ITEM', payload: item })} />}
     </div>
+  )
+}
+
+function AddItemForm({ tripId, onAdd }: { tripId: string; onAdd: (item: BudgetItem) => void }) {
+  const [open, setOpen]         = useState(false)
+  const [category, setCategory] = useState<BudgetCategory>('misc')
+  const [label, setLabel]       = useState('')
+  const [amount, setAmount]     = useState('')
+  const [saving, setSaving]     = useState(false)
+  const [error, setError]       = useState<string | null>(null)
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!label.trim()) { setError('Label is required'); return }
+    setSaving(true); setError(null)
+    const res = await fetch(`/api/trips/${tripId}/budget`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category, label: label.trim(), amount_eur: parseFloat(amount) || 0, is_actual: false }),
+    })
+    setSaving(false)
+    if (!res.ok) { setError('Failed to add item'); return }
+    const item: BudgetItem = await res.json()
+    onAdd(item)
+    setLabel(''); setAmount(''); setOpen(false)
+  }
+
+  if (!open) return (
+    <button onClick={() => setOpen(true)}
+      className="self-start text-xs text-muted-foreground hover:text-foreground transition-colors">
+      + Add item
+    </button>
+  )
+
+  return (
+    <form onSubmit={submit} className="flex flex-col gap-2 rounded-xl border bg-card p-3">
+      <div className="flex gap-2">
+        <select value={category} onChange={e => setCategory(e.target.value as BudgetCategory)}
+          className="text-xs rounded-lg border bg-background px-2 py-1.5 focus:outline-none">
+          <option value="accommodation">Hotel</option>
+          <option value="transport">Transport</option>
+          <option value="food">Food & drinks</option>
+          <option value="activities">Activities</option>
+          <option value="misc">Miscellaneous</option>
+        </select>
+        <input type="text" placeholder="Label" value={label} onChange={e => setLabel(e.target.value)}
+          className="flex-1 text-xs rounded-lg border bg-background px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary/30" />
+        <input type="number" placeholder="Amount" value={amount} onChange={e => setAmount(e.target.value)}
+          min={0} step={1}
+          className="w-20 text-xs rounded-lg border bg-background px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary/30" />
+      </div>
+      {error && <p className="text-xs text-destructive">{error}</p>}
+      <div className="flex gap-2">
+        <button type="submit" disabled={saving}
+          className="text-xs px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 transition-opacity">
+          {saving ? 'Adding…' : 'Add'}
+        </button>
+        <button type="button" onClick={() => setOpen(false)}
+          className="text-xs px-3 py-1.5 rounded-lg border hover:bg-accent transition-colors">
+          Cancel
+        </button>
+      </div>
+    </form>
   )
 }
