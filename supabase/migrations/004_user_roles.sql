@@ -3,7 +3,7 @@
 
 create table public.user_roles (
   id         uuid primary key default gen_random_uuid(),
-  user_id    uuid not null references auth.users (id) on delete cascade,
+  user_id    uuid not null unique references auth.users (id) on delete cascade,
   role       text not null check (role in ('admin', 'staff')),
   created_at timestamptz not null default now()
 );

@@ -1,10 +1,12 @@
+import { config } from 'dotenv'
+config({ path: '.env.local' })
 import { createClient } from '@supabase/supabase-js'
 
-const url = process.env.SUPABASE_URL
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 if (!url || !serviceKey) {
-  console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY')
+  console.error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY')
   process.exit(1)
 }
 
@@ -38,10 +40,21 @@ async function seedUser(email: string, password: string, role: string) {
     console.log(`created: ${email} (${userId})`)
   }
 
-  // Upsert role (idempotent via delete+insert on conflict)
+  // Insert role only if not already set
+  const { data: existingRole } = await supabase
+    .from('user_roles')
+    .select('id')
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (existingRole) {
+    console.log(`role exists: ${email} → ${role} (skip)`)
+    return
+  }
+
   const { error: roleError } = await supabase
     .from('user_roles')
-    .upsert({ user_id: userId, role }, { onConflict: 'user_id' })
+    .insert({ user_id: userId, role })
 
   if (roleError) throw new Error(`upsert role ${email}: ${roleError.message}`)
   console.log(`role set: ${email} → ${role}`)
