@@ -14,9 +14,11 @@ const supabase = createClient(url, serviceKey, {
   auth: { autoRefreshToken: false, persistSession: false },
 })
 
+const OLD_EMAILS = ['admin@demo.com', 'staff@demo.com']
+
 const DEMO_USERS = [
-  { email: 'admin@demo.com', password: 'Admin1234!', role: 'admin' },
-  { email: 'staff@demo.com', password: 'Staff1234!', role: 'staff' },
+  { email: 'admin@company.com', password: 'admin123', role: 'admin' },
+  { email: 'staff@company.com', password: 'staff123', role: 'staff' },
 ]
 
 async function seedUser(email: string, password: string, role: string) {
@@ -60,7 +62,22 @@ async function seedUser(email: string, password: string, role: string) {
   console.log(`role set: ${email} → ${role}`)
 }
 
+async function deleteOldUsers() {
+  const { data: existing } = await supabase.auth.admin.listUsers()
+  for (const email of OLD_EMAILS) {
+    const found = existing?.users?.find((u) => u.email === email)
+    if (found) {
+      const { error } = await supabase.auth.admin.deleteUser(found.id)
+      if (error) console.error(`delete failed: ${email}: ${error.message}`)
+      else console.log(`deleted: ${email}`)
+    } else {
+      console.log(`not found: ${email} (skip)`)
+    }
+  }
+}
+
 async function main() {
+  await deleteOldUsers()
   for (const u of DEMO_USERS) {
     await seedUser(u.email, u.password, u.role)
   }

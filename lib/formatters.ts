@@ -1,21 +1,21 @@
 // Pure utility functions — all testable with Vitest, no side effects
 
-// Formats a number as a EUR currency string
-// formatEur(1235) → "€1,235"
-export function formatEur(amount: number): string {
+// Formats a number as a USD currency string
+// formatUsd(1235) → "$1,235"
+export function formatUsd(amount: number): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'EUR',
+    currency: 'USD',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount)
 }
 
 // Displays a daily cost as a range string
-// formatCostRange(65, 95) → "€65–95"
+// formatCostRange(65, 95) → "$65–$95"
 export function formatCostRange(min: number, max: number): string {
-  if (min === max) return formatEur(min)
-  return formatEur(min)+'–'+formatEur(max)
+  if (min === max) return formatUsd(min)
+  return formatUsd(min)+'–'+formatUsd(max)
 }
 
 // Formats an ISO date string into a human-readable label

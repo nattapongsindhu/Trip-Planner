@@ -9,9 +9,10 @@ type Props = {
   isAdmin: boolean
   saving: boolean
   onToggleSelected: (hotel: Hotel) => void
+  onDelete: (hotel: Hotel) => void
 }
 
-export function HotelCard({ hotel, isAdmin, saving, onToggleSelected }: Props) {
+export function HotelCard({ hotel, isAdmin, saving, onToggleSelected, onDelete }: Props) {
   return (
     <div
       className={`rounded-xl border bg-card px-4 py-3 flex items-start gap-3
@@ -99,14 +100,22 @@ export function HotelCard({ hotel, isAdmin, saving, onToggleSelected }: Props) {
             </a>
           )}
           {isAdmin && (
-            <button
-              onClick={() => onToggleSelected(hotel)}
-              disabled={saving}
-              className="text-xs text-muted-foreground hover:text-foreground
-                         transition-colors disabled:opacity-50"
-            >
-              {saving ? 'Saving…' : hotel.is_selected ? 'Deselect' : 'Select'}
-            </button>
+            <>
+              <button
+                onClick={() => onToggleSelected(hotel)}
+                disabled={saving}
+                className="text-xs text-muted-foreground hover:text-foreground
+                           transition-colors disabled:opacity-50"
+              >
+                {saving ? 'Saving…' : hotel.is_selected ? 'Deselect' : 'Select'}
+              </button>
+              <button
+                onClick={() => onDelete(hotel)}
+                className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+              >
+                Delete
+              </button>
+            </>
           )}
         </div>
       </div>

@@ -13,7 +13,7 @@ export function TripEditForm({ trip }: Props) {
     destination: trip.destination,
     start_date:  trip.start_date,
     end_date:    trip.end_date,
-    budget_eur:  trip.budget_eur,
+    budget_usd:  trip.budget_usd,
     is_template: trip.is_template,
   })
   const [loading, setLoading]   = useState(false)
@@ -118,13 +118,13 @@ export function TripEditForm({ trip }: Props) {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">Budget (EUR)</label>
+          <label className="text-sm font-medium">Budget (USD)</label>
           <input
             type="number"
             min={0}
             step={10}
-            value={form.budget_eur ?? 0}
-            onChange={e => set('budget_eur', Number(e.target.value))}
+            value={form.budget_usd ?? 0}
+            onChange={e => set('budget_usd', Number(e.target.value))}
             className="rounded-lg border bg-background px-3 py-2 text-sm
                        focus:outline-none focus:ring-2 focus:ring-primary/30"
           />

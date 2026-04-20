@@ -1,7 +1,7 @@
 // Server Component — fetches all trips server-side, no client loading state needed
 import Link from 'next/link'
 import { createClient } from '@/lib/supabaseServer'
-import { formatDate, formatEur, tripDuration } from '@/lib/formatters'
+import { formatDate, formatUsd, tripDuration } from '@/lib/formatters'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { AuthButton } from '@/components/AuthButton'
 import { NewTripButton } from '@/components/NewTripButton'
@@ -99,7 +99,7 @@ export default async function HomePage() {
                 <div className="flex items-center gap-3">
                   <span>{tripDuration(trip.start_date, trip.end_date)} days</span>
                   <span className="font-medium text-foreground">
-                    {formatEur(trip.budget_eur)}
+                    {formatUsd(trip.budget_usd)}
                   </span>
                 </div>
               </div>

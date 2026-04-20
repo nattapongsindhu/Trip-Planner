@@ -19,7 +19,7 @@ async function seed() {
       destination: 'Munich → Prague → Vienna → Bratislava → Budapest → Cluj-Napoca → Bucharest',
       start_date: '2026-09-01',
       end_date: '2026-09-15',
-      budget_eur: 1235,
+      budget_usd: 1235,
       is_template: false,
       is_public: false,
     })

@@ -12,9 +12,10 @@ type Props = {
   saving: boolean
   onToggleDone: (day: Day) => void
   onSaveNote: (day: Day, note: string) => void
+  onDelete: (day: Day) => void
 }
 
-export function DayCard({ day, isAdmin, saving, onToggleDone, onSaveNote }: Props) {
+export function DayCard({ day, isAdmin, saving, onToggleDone, onSaveNote, onDelete }: Props) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -125,18 +126,26 @@ export function DayCard({ day, isAdmin, saving, onToggleDone, onSaveNote }: Prop
           />
 
           {isAdmin && (
-            <button
-              onClick={() => onToggleDone(day)}
-              disabled={saving}
-              className={`self-start text-xs px-3 py-1.5 rounded-lg border
-                transition-colors disabled:opacity-50
-                ${day.is_done
-                  ? 'border-green-500/50 text-green-600 dark:text-green-400 bg-green-500/10'
-                  : 'hover:border-green-500/50 hover:text-green-600 dark:hover:text-green-400'
-                }`}
-            >
-              {saving ? 'Saving…' : day.is_done ? '✓ Done' : 'Mark as done'}
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => onToggleDone(day)}
+                disabled={saving}
+                className={`text-xs px-3 py-1.5 rounded-lg border
+                  transition-colors disabled:opacity-50
+                  ${day.is_done
+                    ? 'border-green-500/50 text-green-600 dark:text-green-400 bg-green-500/10'
+                    : 'hover:border-green-500/50 hover:text-green-600 dark:hover:text-green-400'
+                  }`}
+              >
+                {saving ? 'Saving…' : day.is_done ? '✓ Done' : 'Mark as done'}
+              </button>
+              <button
+                onClick={() => onDelete(day)}
+                className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+              >
+                Delete day
+              </button>
+            </div>
           )}
 
         </div>
