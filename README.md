@@ -21,13 +21,6 @@ A full-stack trip planning application built with Next.js, Supabase, and TypeScr
 - **Notes** — Free-text notes per trip
 - **Public trips** — Share trips via public link
 
-## Demo Credentials
-
-| Role  | Email                  | Password  |
-|-------|------------------------|-----------|
-| Admin | admin@company.com      | admin123  |
-| Staff | staff@company.com      | staff123  |
-
 ## Tech Stack
 
 - **Frontend** — Next.js 14, TypeScript, Tailwind CSS
