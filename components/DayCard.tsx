@@ -12,11 +12,59 @@ type Props = {
   saving: boolean
   onToggleDone: (day: Day) => void
   onSaveNote: (day: Day, note: string) => void
+  onUpdate: (day: Day) => void
   onDelete: (day: Day) => void
 }
 
-export function DayCard({ day, isAdmin, saving, onToggleDone, onSaveNote, onDelete }: Props) {
-  const [open, setOpen] = useState(false)
+export function DayCard({ day, isAdmin, saving, onToggleDone, onSaveNote, onUpdate, onDelete }: Props) {
+  const [open, setOpen]       = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft]     = useState(day)
+
+  if (editing) {
+    return (
+      <div className="rounded-xl border bg-card px-4 py-3 flex flex-col gap-3">
+        <div className="grid grid-cols-2 gap-2">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-muted-foreground">City</label>
+            <input type="text" value={draft.city}
+              onChange={e => setDraft(d => ({ ...d, city: e.target.value }))}
+              className="text-xs rounded-lg border bg-background px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary/30" />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-muted-foreground">Country code</label>
+            <input type="text" value={draft.country_code}
+              onChange={e => setDraft(d => ({ ...d, country_code: e.target.value.toUpperCase() }))}
+              maxLength={2} style={{ textTransform: 'uppercase' }}
+              className="text-xs rounded-lg border bg-background px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary/30" />
+          </div>
+          <div className="flex flex-col gap-1 col-span-2">
+            <label className="text-xs text-muted-foreground">Stay</label>
+            <input type="text" value={draft.stay ?? ''}
+              onChange={e => setDraft(d => ({ ...d, stay: e.target.value || null }))}
+              className="text-xs rounded-lg border bg-background px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary/30" />
+          </div>
+          <div className="flex flex-col gap-1 col-span-2">
+            <label className="text-xs text-muted-foreground">Note</label>
+            <textarea value={draft.note ?? ''}
+              onChange={e => setDraft(d => ({ ...d, note: e.target.value || null }))}
+              rows={3}
+              className="text-xs rounded-lg border bg-background px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary/30 resize-none" />
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={() => { onUpdate(draft); setEditing(false) }} disabled={saving}
+            className="text-xs px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 transition-opacity">
+            {saving ? 'Saving…' : 'Save'}
+          </button>
+          <button onClick={() => { setDraft(day); setEditing(false) }}
+            className="text-xs px-3 py-1.5 rounded-lg border hover:bg-accent transition-colors">
+            Cancel
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div
@@ -138,6 +186,12 @@ export function DayCard({ day, isAdmin, saving, onToggleDone, onSaveNote, onDele
                   }`}
               >
                 {saving ? 'Saving…' : day.is_done ? '✓ Done' : 'Mark as done'}
+              </button>
+              <button
+                onClick={() => { setDraft(day); setEditing(true) }}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Edit
               </button>
               <button
                 onClick={() => onDelete(day)}

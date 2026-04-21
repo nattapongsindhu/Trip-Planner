@@ -132,7 +132,7 @@ export default async function TripPage({ params }: Props) {
       {/* transportation section */}
       <section className="mb-8">
         <h2 className="text-base font-semibold mb-3">Transportation</h2>
-        <TransportationList items={typedTransportation} tripId={params.id} isAdmin={isAdmin} />
+        <TransportationList items={typedTransportation} tripId={params.id} isAdmin={isAdmin} startDate={typedTrip.start_date} endDate={typedTrip.end_date} />
       </section>
 
       {/* hotel section */}

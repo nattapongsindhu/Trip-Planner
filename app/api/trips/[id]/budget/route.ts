@@ -65,7 +65,7 @@ export async function PUT(request: Request, { params }: Params) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  let body: { id: string; amount_eur?: number; is_actual?: boolean; label?: string }
+  let body: { id: string; amount_eur?: number; is_actual?: boolean; label?: string; category?: string }
   try { body = await request.json() } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }

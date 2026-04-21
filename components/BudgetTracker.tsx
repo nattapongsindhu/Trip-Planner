@@ -48,6 +48,21 @@ type Props = {
 export function BudgetTracker({ items: initialItems, tripId, isAdmin }: Props) {
   const [state, dispatch] = useReducer(reducer, { items: initialItems, saving: null })
   const summary = calcBudgetSummary(state.items)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [draftItem, setDraftItem] = useState<BudgetItem | null>(null)
+
+  const saveEdit = useCallback(async () => {
+    if (!draftItem) return
+    const res = await fetch(`/api/trips/${tripId}/budget`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(draftItem),
+    })
+    if (!res.ok) { console.error('Failed to update budget item:', res.status, res.statusText); return }
+    const updated: BudgetItem = await res.json()
+    dispatch({ type: 'UPDATE_ITEM', payload: updated })
+    setEditingId(null); setDraftItem(null)
+  }, [draftItem, tripId])
 
   const toggleActual = useCallback(async (item: BudgetItem) => {
     const updated = { ...item, is_actual: !item.is_actual }
@@ -108,7 +123,35 @@ export function BudgetTracker({ items: initialItems, tripId, isAdmin }: Props) {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              {catItems.map(item => (
+              {catItems.map(item => {
+                if (editingId === item.id && draftItem) {
+                  return (
+                    <div key={item.id} className="flex items-center gap-2 rounded-lg border bg-card px-3 py-2.5 flex-wrap">
+                      <select value={draftItem.category}
+                        onChange={e => setDraftItem(d => d && ({ ...d, category: e.target.value as BudgetCategory }))}
+                        className="text-xs rounded-lg border bg-background px-2 py-1 focus:outline-none">
+                        {(Object.keys(CATEGORY_LABELS) as BudgetCategory[]).map(c => (
+                          <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>
+                        ))}
+                      </select>
+                      <input type="text" value={draftItem.label}
+                        onChange={e => setDraftItem(d => d && ({ ...d, label: e.target.value }))}
+                        className="flex-1 text-xs rounded-lg border bg-background px-2 py-1 focus:outline-none min-w-0" />
+                      <input type="number" min={0} value={draftItem.amount_eur}
+                        onChange={e => setDraftItem(d => d && ({ ...d, amount_eur: parseFloat(e.target.value) || 0 }))}
+                        className="w-20 text-xs rounded-lg border bg-background px-2 py-1 focus:outline-none" />
+                      <button onClick={saveEdit}
+                        className="text-xs px-2 py-1 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity shrink-0">
+                        Save
+                      </button>
+                      <button onClick={() => { setEditingId(null); setDraftItem(null) }}
+                        className="text-xs px-2 py-1 rounded-lg border hover:bg-accent transition-colors shrink-0">
+                        Cancel
+                      </button>
+                    </div>
+                  )
+                }
+                return (
                 <div
                   key={item.id}
                   className="flex items-center gap-3 rounded-lg border bg-card px-3 py-2.5"
@@ -172,6 +215,12 @@ export function BudgetTracker({ items: initialItems, tripId, isAdmin }: Props) {
                         {item.is_actual ? '✓ actual' : 'estimate'}
                       </button>
                       <button
+                        onClick={() => { setDraftItem({ ...item }); setEditingId(item.id) }}
+                        className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        Edit
+                      </button>
+                      <button
                         onClick={() => deleteItem(item)}
                         className="text-xs text-muted-foreground hover:text-destructive transition-colors"
                       >
@@ -180,7 +229,8 @@ export function BudgetTracker({ items: initialItems, tripId, isAdmin }: Props) {
                     </div>
                   )}
                 </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         )

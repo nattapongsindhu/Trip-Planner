@@ -17,4 +17,4 @@ export type Day = {
 
 // partial update type — id is required, everything else optional
 export type DayUpdate = Pick<Day, 'id'> &
-  Partial<Pick<Day, 'note' | 'is_done' | 'city' | 'highlights' | 'transport' | 'stay'>>
+  Partial<Pick<Day, 'note' | 'is_done' | 'city' | 'country_code' | 'highlights' | 'transport' | 'stay'>>

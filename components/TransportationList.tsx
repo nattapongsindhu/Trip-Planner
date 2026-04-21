@@ -30,9 +30,16 @@ function reducer(state: State, action: Action): State {
   }
 }
 
-type Props = { items: Transportation[]; tripId: string; isAdmin: boolean }
+type Props = { items: Transportation[]; tripId: string; isAdmin: boolean; startDate?: string | null; endDate?: string | null }
 
-export function TransportationList({ items: initialItems, tripId, isAdmin }: Props) {
+function clampDate(date: string, min?: string | null, max?: string | null): string {
+  if (!date) return date
+  if (min && date < min) return min
+  if (max && date > max) return max
+  return date
+}
+
+export function TransportationList({ items: initialItems, tripId, isAdmin, startDate, endDate }: Props) {
   const [state, dispatch] = useReducer(reducer, { items: initialItems, saving: null })
 
   const deleteItem = useCallback(async (item: Transportation) => {
@@ -68,12 +75,16 @@ export function TransportationList({ items: initialItems, tripId, isAdmin }: Pro
           saving={state.saving === item.id}
           onUpdate={updateItem}
           onDelete={deleteItem}
+          startDate={startDate}
+          endDate={endDate}
         />
       ))}
       {isAdmin && (
         <AddTransportationForm
           tripId={tripId}
           onAdd={item => dispatch({ type: 'ADD', payload: item })}
+          startDate={startDate}
+          endDate={endDate}
         />
       )}
     </div>
@@ -81,13 +92,15 @@ export function TransportationList({ items: initialItems, tripId, isAdmin }: Pro
 }
 
 function TransportationCard({
-  item, isAdmin, saving, onUpdate, onDelete,
+  item, isAdmin, saving, onUpdate, onDelete, startDate, endDate,
 }: {
   item: Transportation
   isAdmin: boolean
   saving: boolean
   onUpdate: (item: Transportation) => void
   onDelete: (item: Transportation) => void
+  startDate?: string | null
+  endDate?: string | null
 }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft]     = useState(item)
@@ -108,7 +121,11 @@ function TransportationCard({
           <div className="flex flex-col gap-1">
             <label className="text-xs text-muted-foreground">Date</label>
             <input type="date" value={draft.date ?? ''}
-              onChange={e => setDraft(d => ({ ...d, date: e.target.value || null }))}
+              min={startDate ?? undefined} max={endDate ?? undefined}
+              onChange={e => {
+                const clamped = e.target.value ? clampDate(e.target.value, startDate, endDate) : null
+                setDraft(d => ({ ...d, date: clamped }))
+              }}
               className="text-xs rounded-lg border bg-background px-2 py-1.5 focus:outline-none" />
           </div>
           <div className="flex flex-col gap-1">
@@ -181,7 +198,7 @@ function TransportationCard({
   )
 }
 
-function AddTransportationForm({ tripId, onAdd }: { tripId: string; onAdd: (item: Transportation) => void }) {
+function AddTransportationForm({ tripId, onAdd, startDate, endDate }: { tripId: string; onAdd: (item: Transportation) => void; startDate?: string | null; endDate?: string | null }) {
   const [open, setOpen]     = useState(false)
   const [type, setType]     = useState<TransportType>('flight')
   const [from, setFrom]     = useState('')
@@ -236,7 +253,9 @@ function AddTransportationForm({ tripId, onAdd }: { tripId: string; onAdd: (item
         </div>
         <div className="flex flex-col gap-1">
           <label className="text-xs text-muted-foreground">Date</label>
-          <input type="date" value={date} onChange={e => setDate(e.target.value)}
+          <input type="date" value={date}
+            min={startDate ?? undefined} max={endDate ?? undefined}
+            onChange={e => setDate(e.target.value ? clampDate(e.target.value, startDate, endDate) : '')}
             className="text-xs rounded-lg border bg-background px-2 py-1.5 focus:outline-none" />
         </div>
         <div className="flex flex-col gap-1">

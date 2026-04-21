@@ -66,6 +66,20 @@ export function DayList({ days: initialDays, tripId, isAdmin }: Props) {
     dispatch({ type: 'SET_SAVING', id: null })
   }, [tripId])
 
+  const updateDay = useCallback(async (updated: Day) => {
+    dispatch({ type: 'SET_SAVING', id: updated.id })
+    const res = await fetch(`/api/trips/${tripId}/days`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updated),
+    })
+    if (res.ok) {
+      const data: Day = await res.json()
+      dispatch({ type: 'UPDATE_DAY', payload: data })
+    }
+    dispatch({ type: 'SET_SAVING', id: null })
+  }, [tripId])
+
   const deleteDay = useCallback(async (day: Day) => {
     dispatch({ type: 'DELETE_DAY', id: day.id })
     const res = await fetch(`/api/trips/${tripId}/days?dayId=${day.id}`, { method: 'DELETE' })
@@ -85,6 +99,7 @@ export function DayList({ days: initialDays, tripId, isAdmin }: Props) {
           saving={state.saving === day.id}
           onToggleDone={toggleDone}
           onSaveNote={saveNote}
+          onUpdate={updateDay}
           onDelete={deleteDay}
         />
       ))}
