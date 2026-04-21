@@ -128,8 +128,9 @@ function AddDayForm({ tripId, onAdd }: { tripId: string; onAdd: (day: Day) => vo
       <div className="flex gap-2">
         <input type="text" placeholder="City" value={city} onChange={e => setCity(e.target.value)}
           className="flex-1 text-xs rounded-lg border bg-background px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary/30" />
-        <input type="text" placeholder="CC (e.g. DE)" value={countryCode} onChange={e => setCountryCode(e.target.value)}
+        <input type="text" placeholder="CC (e.g. DE)" value={countryCode} onChange={e => setCountryCode(e.target.value.toUpperCase())}
           maxLength={2}
+          style={{ textTransform: 'uppercase' }}
           className="w-20 text-xs rounded-lg border bg-background px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary/30" />
       </div>
       {error && <p className="text-xs text-destructive">{error}</p>}
@@ -137,6 +138,10 @@ function AddDayForm({ tripId, onAdd }: { tripId: string; onAdd: (day: Day) => vo
         <button type="submit" disabled={saving}
           className="text-xs px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 transition-opacity">
           {saving ? 'Adding…' : 'Add day'}
+        </button>
+        <button type="button" onClick={() => { setCity(''); setCountryCode(''); setError(null) }}
+          className="text-xs px-3 py-1.5 rounded-lg border hover:bg-accent transition-colors">
+          Clear
         </button>
         <button type="button" onClick={() => setOpen(false)}
           className="text-xs px-3 py-1.5 rounded-lg border hover:bg-accent transition-colors">

@@ -25,6 +25,11 @@ export function TripEditForm({ trip }: Props) {
     setForm(prev => ({ ...prev, [key]: value }))
   }
 
+  function handleClear() {
+    setForm({ title: '', destination: '', start_date: null, end_date: null, budget_usd: 0, is_template: false })
+    setError(null)
+  }
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
@@ -163,14 +168,23 @@ export function TripEditForm({ trip }: Props) {
           >
             {deleting ? 'Deleting…' : 'Delete trip'}
           </button>
-          <button
-            type="submit"
-            disabled={loading}
-            className="rounded-lg bg-primary text-primary-foreground px-5 py-2 text-sm
-                       font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
-          >
-            {loading ? 'Saving…' : 'Save changes'}
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleClear}
+              className="rounded-lg border px-5 py-2 text-sm font-medium hover:bg-accent transition-colors"
+            >
+              Clear
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="rounded-lg bg-primary text-primary-foreground px-5 py-2 text-sm
+                         font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {loading ? 'Saving…' : 'Save changes'}
+            </button>
+          </div>
         </div>
 
       </form>

@@ -155,14 +155,23 @@ export function NewTripForm() {
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="rounded-lg bg-primary text-primary-foreground py-2.5 text-sm
-                   font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
-      >
-        {loading ? 'Creating…' : 'Create trip'}
-      </button>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => { setForm(EMPTY); setError(null) }}
+          className="flex-1 rounded-lg border py-2.5 text-sm font-medium hover:bg-accent transition-colors"
+        >
+          Clear
+        </button>
+        <button
+          type="submit"
+          disabled={loading}
+          className="flex-1 rounded-lg bg-primary text-primary-foreground py-2.5 text-sm
+                     font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+        >
+          {loading ? 'Creating…' : 'Create trip'}
+        </button>
+      </div>
 
     </form>
   )
