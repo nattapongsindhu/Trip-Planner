@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { countryFlag, formatCostRange } from '@/lib/formatters'
 import { DayNoteEditor } from './DayNoteEditor'
-import InlineEdit from './InlineEdit'
 import type { Day } from '@/types'
 
 type Props = {
@@ -74,12 +73,11 @@ export function DayCard({ day, isAdmin, saving, onToggleDone, onSaveNote, onUpda
           : 'hover:border-primary/30'
         }`}
     >
-      {/* header row — always visible, click to expand */}
+      {/* header row — click to expand details */}
       <button
         onClick={() => setOpen(o => !o)}
         className="w-full flex items-center gap-3 px-4 py-3 text-left"
       >
-        {/* day number badge */}
         <span className="shrink-0 w-9 h-9 rounded-full bg-muted flex items-center
                          justify-center text-xs font-semibold">
           {day.day_number}
@@ -88,22 +86,7 @@ export function DayCard({ day, isAdmin, saving, onToggleDone, onSaveNote, onUpda
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 text-sm font-medium">
             <span>{countryFlag(day.country_code)}</span>
-            {isAdmin ? (
-              <InlineEdit
-                value={day.city}
-                className="truncate"
-                onSave={async (val) => {
-                  const res = await fetch(`/api/trips/${day.trip_id}/days`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: day.id, city: val }),
-                  })
-                  if (!res.ok) console.error('Failed to update city:', res.status, res.statusText)
-                }}
-              />
-            ) : (
-              <span className="truncate">{day.city}</span>
-            )}
+            <span className="truncate">{day.city}</span>
             {day.is_transfer && (
               <span className="text-xs px-1.5 py-0.5 rounded bg-amber-500/10
                                text-amber-600 dark:text-amber-400 border
@@ -113,21 +96,7 @@ export function DayCard({ day, isAdmin, saving, onToggleDone, onSaveNote, onUpda
             )}
           </div>
           <p className="text-xs text-muted-foreground truncate mt-0.5">
-            {isAdmin ? (
-              <InlineEdit
-                value={day.stay ?? '—'}
-                onSave={async (val) => {
-                  const res = await fetch(`/api/trips/${day.trip_id}/days`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: day.id, stay: val }),
-                  })
-                  if (!res.ok) console.error('Failed to update stay:', res.status, res.statusText)
-                }}
-              />
-            ) : (
-              day.stay ?? '—'
-            )}
+            {day.stay ?? '—'}
           </p>
         </div>
 
@@ -141,7 +110,7 @@ export function DayCard({ day, isAdmin, saving, onToggleDone, onSaveNote, onUpda
         </div>
       </button>
 
-      {/* expanded body */}
+      {/* expanded body — highlights, transport, notes */}
       {open && (
         <div className="border-t px-4 py-4 flex flex-col gap-4">
 
@@ -173,35 +142,36 @@ export function DayCard({ day, isAdmin, saving, onToggleDone, onSaveNote, onUpda
             onSave={note => onSaveNote(day, note)}
           />
 
-          {isAdmin && (
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => onToggleDone(day)}
-                disabled={saving}
-                className={`text-xs px-3 py-1.5 rounded-lg border
-                  transition-colors disabled:opacity-50
-                  ${day.is_done
-                    ? 'border-green-500/50 text-green-600 dark:text-green-400 bg-green-500/10'
-                    : 'hover:border-green-500/50 hover:text-green-600 dark:hover:text-green-400'
-                  }`}
-              >
-                {saving ? 'Saving…' : day.is_done ? '✓ Done' : 'Mark as done'}
-              </button>
-              <button
-                onClick={() => { setDraft(day); setEditing(true) }}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Edit
-              </button>
-              <button
-                onClick={() => onDelete(day)}
-                className="text-xs text-muted-foreground hover:text-destructive transition-colors"
-              >
-                Delete day
-              </button>
-            </div>
-          )}
+        </div>
+      )}
 
+      {/* admin actions — always visible, no accordion required */}
+      {isAdmin && (
+        <div className="flex items-center gap-3 px-4 pb-3">
+          <button
+            onClick={() => onToggleDone(day)}
+            disabled={saving}
+            className={`text-xs px-3 py-1.5 rounded-lg border
+              transition-colors disabled:opacity-50
+              ${day.is_done
+                ? 'border-green-500/50 text-green-600 dark:text-green-400 bg-green-500/10'
+                : 'hover:border-green-500/50 hover:text-green-600 dark:hover:text-green-400'
+              }`}
+          >
+            {saving ? 'Saving…' : day.is_done ? '✓ Done' : 'Mark as done'}
+          </button>
+          <button
+            onClick={() => { setDraft(day); setEditing(true) }}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Edit
+          </button>
+          <button
+            onClick={() => onDelete(day)}
+            className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+          >
+            Delete
+          </button>
         </div>
       )}
     </div>
