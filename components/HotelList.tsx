@@ -52,6 +52,20 @@ export function HotelList({ hotels: initialHotels, tripId, isAdmin }: Props) {
     dispatch({ type: 'SET_SAVING', id: null })
   }, [tripId])
 
+  const updateHotel = useCallback(async (updated: Hotel) => {
+    dispatch({ type: 'SET_SAVING', id: updated.id })
+    const res = await fetch(`/api/trips/${tripId}/hotels`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updated),
+    })
+    if (res.ok) {
+      const data: Hotel = await res.json()
+      dispatch({ type: 'UPDATE_HOTEL', payload: data })
+    }
+    dispatch({ type: 'SET_SAVING', id: null })
+  }, [tripId])
+
   const deleteHotel = useCallback(async (hotel: Hotel) => {
     dispatch({ type: 'DELETE_HOTEL', id: hotel.id })
     const res = await fetch(`/api/trips/${tripId}/hotels?hotelId=${hotel.id}`, { method: 'DELETE' })
@@ -82,6 +96,7 @@ export function HotelList({ hotels: initialHotels, tripId, isAdmin }: Props) {
                 isAdmin={isAdmin}
                 saving={state.saving === hotel.id}
                 onToggleSelected={toggleSelected}
+                onUpdate={updateHotel}
                 onDelete={deleteHotel}
               />
             ))}
