@@ -86,7 +86,13 @@ export function NewTripForm() {
           <input
             type="date"
             value={form.start_date ?? ''}
-            onChange={e => set('start_date', e.target.value || null)}
+            onChange={e => {
+              const newStart = e.target.value || null
+              setForm(prev => {
+                const endInvalid = newStart && prev.end_date && prev.end_date <= newStart
+                return { ...prev, start_date: newStart, end_date: endInvalid ? null : prev.end_date }
+              })
+            }}
             className="rounded-lg border bg-background px-3 py-2 text-sm
                        focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
@@ -96,6 +102,9 @@ export function NewTripForm() {
           <input
             type="date"
             value={form.end_date ?? ''}
+            min={form.start_date
+              ? new Date(new Date(form.start_date).getTime() + 86400000).toISOString().slice(0, 10)
+              : undefined}
             onChange={e => set('end_date', e.target.value || null)}
             className="rounded-lg border bg-background px-3 py-2 text-sm
                        focus:outline-none focus:ring-2 focus:ring-primary/30"
