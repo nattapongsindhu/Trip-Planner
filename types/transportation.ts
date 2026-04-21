@@ -4,8 +4,8 @@ export type Transportation = {
   id: string
   trip_id: string
   type: TransportType
-  from: string
-  to: string
+  from_location: string
+  to_location: string
   date: string | null
   cost_usd: number | null
   notes: string | null

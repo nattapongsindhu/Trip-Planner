@@ -28,8 +28,8 @@ export async function POST(request: Request, { params }: Params) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
-  if (!body.from?.trim() || !body.to?.trim() || !body.type) {
-    return NextResponse.json({ error: 'type, from, and to are required' }, { status: 400 })
+  if (!body.from_location?.trim() || !body.to_location?.trim() || !body.type) {
+    return NextResponse.json({ error: 'type, from_location, and to_location are required' }, { status: 400 })
   }
 
   const { data, error } = await supabase

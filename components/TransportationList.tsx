@@ -113,14 +113,14 @@ function TransportationCard({
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-xs text-muted-foreground">From</label>
-            <input type="text" value={draft.from}
-              onChange={e => setDraft(d => ({ ...d, from: e.target.value }))}
+            <input type="text" value={draft.from_location}
+              onChange={e => setDraft(d => ({ ...d, from_location: e.target.value }))}
               className="text-xs rounded-lg border bg-background px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary/30" />
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-xs text-muted-foreground">To</label>
-            <input type="text" value={draft.to}
-              onChange={e => setDraft(d => ({ ...d, to: e.target.value }))}
+            <input type="text" value={draft.to_location}
+              onChange={e => setDraft(d => ({ ...d, to_location: e.target.value }))}
               className="text-xs rounded-lg border bg-background px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary/30" />
           </div>
           <div className="flex flex-col gap-1">
@@ -157,7 +157,7 @@ function TransportationCard({
       </span>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium">
-          {item.from} → {item.to}
+          {item.from_location} → {item.to_location}
         </p>
         <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
           {item.date && <span>{item.date}</span>}
@@ -201,8 +201,8 @@ function AddTransportationForm({ tripId, onAdd }: { tripId: string; onAdd: (item
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         type,
-        from: from.trim(),
-        to: to.trim(),
+        from_location: from.trim(),
+        to_location: to.trim(),
         date: date || null,
         cost_usd: cost ? parseFloat(cost) : null,
         notes: notes.trim() || null,
